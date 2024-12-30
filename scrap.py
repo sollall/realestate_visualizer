@@ -1,20 +1,57 @@
+import pandas as pd
+import re
+from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 from retry import retry
-import urllib
-import time
-import logging
 
-import numpy as np
+# 面積を抽出する関数
+def extract_area(text):
+    match = re.search(r'(\d+(\.\d+)?)m2', text)
+    if match:
+        return float(match.group(1))
+    return None
 
-# 複数ページの情報をまとめて取得
-data_samples = []
+extract_area("50.00m2　（15.13m2）")
 
-# スクレイピングするページ数
-max_page = 2000
-# SUUMOを東京都23区のみ指定して検索して出力した画面のurl(ページ数フォーマットが必要)
-url = "https://suumo.jp/jj/bukken/ichiran/JJ010FJ001/?ar=030&bs=011&ta=13&jspIdFlg=patternShikugun&sc=13101&sc=13102&sc=13103&sc=13104&sc=13105&sc=13113&sc=13106&sc=13107&sc=13108&sc=13118&sc=13121&sc=13122&sc=13123&sc=13109&sc=13110&sc=13111&sc=13112&sc=13114&sc=13115&sc=13120&sc=13116&sc=13117&sc=13119&kb=1&kt=9999999&mb=0&mt=9999999&ekTjCd=&ekTjNm=&tj=0&cnb=0&cn=9999999&srch_navi={{2}}&page={}"
+def extract_name(text):
+    return text.split()[0]
 
+extract_name("給田西住宅\u3000１号棟")
+
+def extract_price(text):
+    text = text.strip()
+    match = re.search(r'((\d+)億)?\s*((\d+)万)?', text)
+    if match:
+        oku = int(match.group(2)) * 100000000 if match.group(2) else 0
+        man = int(match.group(4)) * 10000 if match.group(4) else 0
+        return oku + man
+    return None
+
+def calculate_age(built_date):
+    # 現在の年と月を取得
+    current_date = datetime.now()
+    current_year = current_date.year
+    current_month = current_date.month
+
+    # built_dateを年と月に分割
+    match = re.search(r'(\d+)年(\d+)月', built_date)
+    if match:
+        built_year = int(match.group(1))
+        built_month = int(match.group(2))
+    else:
+        return None,None
+    
+    # 築年数を計算
+    age_years = current_year - built_year
+    age_months = current_month - built_month
+
+    # 月の差がマイナスの場合、年から1を引き、月に12を足す
+    if age_months < 0:
+        age_years -= 1
+        age_months += 12
+
+    return age_years,age_months
 
 # リクエストがうまく行かないパターンを回避するためのやり直し
 @retry(tries=3, delay=10, backoff=2)
@@ -23,99 +60,40 @@ def load_page(url):
     soup = BeautifulSoup(html.content, 'html.parser')
     return soup
 
-# 処理時間を測りたい
-start = time.time()
-times = []
+def get_estate_data_suumo():
+    # SUUMOを東京都23区のみ指定して検索して出力した画面のurl(ページ数フォーマットが必要)
+    url = "https://suumo.jp/jj/bukken/ichiran/JJ010FJ001/?ar=030&bs=011&ta=13&jspIdFlg=patternShikugun&sc=13101&sc=13102&sc=13103&sc=13104&sc=13105&sc=13113&sc=13106&sc=13107&sc=13108&sc=13118&sc=13121&sc=13122&sc=13123&sc=13109&sc=13110&sc=13111&sc=13112&sc=13114&sc=13115&sc=13120&sc=13116&sc=13117&sc=13119&kb=1&kt=9999999&mb=0&mt=9999999&ekTjCd=&ekTjNm=&tj=0&cnb=0&cn=9999999&srch_navi={{2}}&page={}"
+    ESTATES_MAX=30
+    info={"name":[],
+          "price":[],
+          "address":[],
+          "area":[],
+          "age_years":[],
+          "age_months":[],
+          "price per unit area":[]
+          }
 
-# ページごとの処理
-#for page in range(1,max_page+1):
-for page in range(1,3):
-    before = time.time()
-    # ページ情報
-    soup = load_page(url.format(page))
-    # 物件情報リストを指定
-    div_estates = soup.find("div",class_='ui-media')
-    estates=div_estates.find_all("div",class_='property')
-    print(estates)
-    # 物件ごとの処理
-    for estate in estates:
+    for page in range(1,2):
+        soup = load_page(url.format(page))
+        estates_groups = soup.find("div",class_='property_unit_group')
+        estates = estates_groups.find_all('div', class_='property_unit')
 
-        # 建物情報
-        data_home = {}
-        # カテゴリ
-        data_home["cat"]=estate.find(class_='ui-pct ui-pct--util1').text
-        # 建物名
-        data_home["name"]=estate.find(class_='cassetteitem_content-title').text
-        # 住所
-        data_home["address"]=estate.find(class_='cassetteitem_detail-col1').text
-        # 最寄り駅のアクセス
-        children = estate.find(class_='cassetteitem_detail-col2')
-        for id,grandchild in enumerate(children.find_all(class_='cassetteitem_detail-text')):
-            data_home["access"]=grandchild.text
-        # 築年数と階数
-        children = estate.find(class_='cassetteitem_detail-col3')
-        for grandchild in children.find_all('div'):
-            data_home["status"]=grandchild.text
-        
-        print(data_home)
+        for i in range(ESTATES_MAX):
+            estate=estates[i].find_all('div', class_='dottable-line')
 
-        """
-        # 部屋情報
-        rooms = estate.find(class_='cassetteitem_other')
-        for room in rooms.find_all(class_='js-cassette_link'):
-            data_room = []
             
-            # 部屋情報が入っている表を探索
-            for id_, grandchild in enumerate(room.find_all('td')):
-                # 階
-                if id_ == 2:
-                    data_room.append(grandchild.text.strip())
-                # 家賃と管理費
-                elif id_ == 3:
-                    data_room.append(grandchild.find(class_='cassetteitem_other-emphasis ui-text--bold').text)
-                    data_room.append(grandchild.find(class_='cassetteitem_price cassetteitem_price--administration').text)
-                # 敷金と礼金
-                elif id_ == 4:
-                    data_room.append(grandchild.find(class_='cassetteitem_price cassetteitem_price--deposit').text)
-                    data_room.append(grandchild.find(class_='cassetteitem_price cassetteitem_price--gratuity').text)
-                # 間取りと面積
-                elif id_ == 5:
-                    data_room.append(grandchild.find(class_='cassetteitem_madori').text)
-                    data_room.append(grandchild.find(class_='cassetteitem_menseki').text)
-                # url
-                elif id_ == 8:
-                    get_url = grandchild.find(class_='js-cassette_link_href cassetteitem_other-linktext').get('href')
-                    abs_url = urllib.parse.urljoin(url,get_url)
-                    data_room.append(abs_url)
-            # 物件情報と部屋情報をくっつける
-            data_sample = data_home + data_room
-            data_samples.append(data_sample)
-        """
-        
-    # 1アクセスごとに1秒休む
-    time.sleep(1)
-    
-    # 進捗確認
-    # このページの作業時間を表示
-    after = time.time()
-    running_time = after - before
-    times.append(running_time)
-    print(f'{page}ページ目：{running_time}秒')
-    # 取得した件数
-    print(f'総取得件数：{len(data_samples)}')
-    # 作業進捗
-    complete_ratio = round(page/max_page*100,3)
-    print(f'完了：{complete_ratio}%')
-    # 作業の残り時間目安を表示
-    running_mean = np.mean(times)
-    running_required_time = running_mean * (max_page - page)
-    hour = int(running_required_time/3600)
-    minute = int((running_required_time%3600)/60)
-    second = int(running_required_time%60)
-    print(f'残り時間：{hour}時間{minute}分{second}秒\n')
+            name_text=estate[0].find_all("dd")[0].text
+            info["name"].append(extract_name(name_text))
+            price_text=estate[1].find_all("dd")[0].text
 
+            info["price"].append(extract_price(price_text))
+            info["address"].append(estate[2].find_all("dd")[0].text)
+            area_text=estate[3].find_all("dd")[0].text
+            info["area"].append(extract_area(area_text))
+            built_date=estate[4].find_all("dd")[1].text
+            age_years,age_months=calculate_age(built_date)
+            info["age_years"].append(age_years)
+            info["age_months"].append(age_months)
+            info["price per unit area"].append(float(info["price"][-1])/float(info["area"][-1])*3.30578)
 
-# 処理時間を測りたい
-finish = time.time()
-running_all = finish - start
-print('総経過時間：',running_all)
+    return pd.DataFrame(info)
