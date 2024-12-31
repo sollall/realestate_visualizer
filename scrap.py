@@ -4,6 +4,7 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 from retry import retry
+from tqdm import tqdm
 
 # 面積を抽出する関数
 def extract_area(text):
@@ -60,7 +61,7 @@ def load_page(url):
     soup = BeautifulSoup(html.content, 'html.parser')
     return soup
 
-def get_estate_data_suumo():
+def get_estate_data_suumo(pages):
     # SUUMOを東京都23区のみ指定して検索して出力した画面のurl(ページ数フォーマットが必要)
     url = "https://suumo.jp/jj/bukken/ichiran/JJ010FJ001/?ar=030&bs=011&ta=13&jspIdFlg=patternShikugun&sc=13101&sc=13102&sc=13103&sc=13104&sc=13105&sc=13113&sc=13106&sc=13107&sc=13108&sc=13118&sc=13121&sc=13122&sc=13123&sc=13109&sc=13110&sc=13111&sc=13112&sc=13114&sc=13115&sc=13120&sc=13116&sc=13117&sc=13119&kb=1&kt=9999999&mb=0&mt=9999999&ekTjCd=&ekTjNm=&tj=0&cnb=0&cn=9999999&srch_navi={{2}}&page={}"
     ESTATES_MAX=30
@@ -73,7 +74,7 @@ def get_estate_data_suumo():
           "price per unit area":[]
           }
 
-    for page in range(1,2):
+    for page in tqdm(range(1,pages+1)):
         soup = load_page(url.format(page))
         estates_groups = soup.find("div",class_='property_unit_group')
         estates = estates_groups.find_all('div', class_='property_unit')
