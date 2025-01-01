@@ -9,11 +9,19 @@ dataframe=pd.read_csv("suumo_loc.csv",index_col=0)
 def scale_color(value, min_value, max_value):
     # Normalize the value to be between 0 and 1
     normalized = (value - min_value) / (max_value - min_value)
-    # Scale to a color range (e.g., from blue to red)
-    r = int(255 * normalized)
-    g = int(0)
-    b = int(255 * (1 - normalized))
-    return [r, g, b, 160]
+    # Define a 7-color scale (e.g., from blue to red)
+    colors = [
+        [0, 0, 255, 160],   # Blue
+        [0, 128, 255, 160], # Light Blue
+        [0, 255, 255, 160], # Cyan
+        [255, 255, 0, 160], # Yellow
+        [255, 165, 0, 160], # Orange
+        [255, 69, 0, 160],  # Orange Red
+        [255, 0, 0, 160]    # Red
+    ]
+    # Map the normalized value to the corresponding color
+    index = int(normalized * (len(colors) - 1))
+    return colors[index]
 
 # Apply the function to create a color column
 dataframe["log_price"] = dataframe["price per unit area"].apply(lambda x: np.log(x))
