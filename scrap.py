@@ -5,6 +5,8 @@ import requests
 from bs4 import BeautifulSoup
 from retry import retry
 from tqdm import tqdm
+import urllib
+
 
 # 面積を抽出する関数
 def extract_area(text):
@@ -98,3 +100,24 @@ def get_estate_data_suumo(pages):
             info["price per unit area"].append(float(info["price"][-1])/float(info["area"][-1])*3.30578)
 
     return pd.DataFrame(info)
+
+def get_lat_lon(addresses):
+
+    @retry(tries=3, delay=10, backoff=2)
+    def _load_page(url):
+        response = requests.get(url)
+        return response
+
+    lons=[]
+    lats=[]
+    
+    for address in tqdm(addresses):
+        makeUrl = "https://msearch.gsi.go.jp/address-search/AddressSearch?q="
+        s_quote = urllib.parse.quote(address)
+        response=_load_page(makeUrl + s_quote)
+        lon,lat=response.json()[0]["geometry"]["coordinates"]
+
+        lons.append(lon)
+        lats.append(lat)
+    
+    return lons,lats
