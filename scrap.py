@@ -60,8 +60,7 @@ def calculate_age(built_date):
 @retry(tries=3, delay=10, backoff=2)
 def load_page(url):
     html = requests.get(url)
-    soup = BeautifulSoup(html.content, 'html.parser')
-    return soup
+    return html
 
 def get_estate_data_suumo(pages):
     # SUUMOを東京都23区のみ指定して検索して出力した画面のurl(ページ数フォーマットが必要)
@@ -77,7 +76,8 @@ def get_estate_data_suumo(pages):
           }
 
     for page in tqdm(range(1,pages+1)):
-        soup = load_page(url.format(page))
+        html = load_page(url.format(page))
+        soup = BeautifulSoup(html.content, 'html.parser')
         estates_groups = soup.find("div",class_='property_unit_group')
         estates = estates_groups.find_all('div', class_='property_unit')
 
@@ -103,18 +103,13 @@ def get_estate_data_suumo(pages):
 
 def get_lat_lon(addresses):
 
-    @retry(tries=3, delay=10, backoff=2)
-    def _load_page(url):
-        response = requests.get(url)
-        return response
-
     lons=[]
     lats=[]
     
     for address in tqdm(addresses):
         makeUrl = "https://msearch.gsi.go.jp/address-search/AddressSearch?q="
         s_quote = urllib.parse.quote(address)
-        response=_load_page(makeUrl + s_quote)
+        response=load_page(makeUrl + s_quote)
         lon,lat=response.json()[0]["geometry"]["coordinates"]
 
         lons.append(lon)
