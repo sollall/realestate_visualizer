@@ -29,8 +29,30 @@ min_value = dataframe['log_price'].min()
 max_value = dataframe['log_price'].max()
 dataframe['color'] = dataframe['log_price'].apply(lambda x: scale_color(x, min_value, max_value))
 
-data = dataframe.to_dict(orient='records')
 
+# 絞り込み条件の設定
+min_area = dataframe['area'].min()
+max_area = dataframe['area'].max()
+price_range = st.slider(
+    'areaの指定',
+    min_area, max_area, (min_area, max_area)
+)
+
+min_age_years = dataframe['age_years'].min()
+max_age_years = dataframe['age_years'].max()
+age_years_range = st.slider(
+    'age_yearsの指定',
+    min_age_years, max_age_years, (min_age_years, max_age_years)
+)
+
+#条件に合わせたデータ絞り込み
+#セッションステートにしているのは逐次追加したかった時の名残
+dataframe=dataframe[(dataframe['area']>=price_range[0]) & (dataframe['area']<=price_range[1])]
+dataframe=dataframe[(dataframe['age_years']>=age_years_range[0]) & (dataframe['age_years']<=age_years_range[1])]
+data = dataframe.to_dict(orient='records')
+st.session_state.candidates=pd.DataFrame(columns=dataframe.columns)
+
+## 地図部分の作成
 # レイヤーを設定
 layer = pdk.Layer(
     "ScatterplotLayer",
@@ -54,7 +76,7 @@ view_state = pdk.ViewState(
 chart = pdk.Deck(
     layers=[layer],
     initial_view_state=view_state,
-    map_style=None,
+    map_style="mapbox://styles/mapbox/streets-v11",
 )
 
 event = st.pydeck_chart(
@@ -63,8 +85,10 @@ event = st.pydeck_chart(
     on_select="rerun",
 )
 
+selected=event.selection
 
-a=event.selection
-
-print(a["indices"]["map"][0])
+if "map" in selected["indices"]:
+    selected_index=selected["indices"]["map"][0]
+    st.session_state.candidates=pd.concat([st.session_state.candidates, dataframe.iloc[selected_index].to_frame().T])
+    st.dataframe(st.session_state.candidates)
 
