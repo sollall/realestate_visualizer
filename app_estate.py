@@ -35,7 +35,8 @@ min_area = dataframe['area'].min()
 max_area = dataframe['area'].max()
 price_range = st.slider(
     'areaの指定',
-    min_area, max_area, (min_area, max_area)
+    min_area, max_area, (min_area, max_area),
+    step=1.0
 )
 
 min_age_years = dataframe['age_years'].min()
