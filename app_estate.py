@@ -31,20 +31,22 @@ dataframe['color'] = dataframe['log_price'].apply(lambda x: scale_color(x, min_v
 
 
 # 絞り込み条件の設定
-min_area = dataframe['area'].min()
-max_area = dataframe['area'].max()
-price_range = st.slider(
-    'areaの指定',
-    min_area, max_area, (min_area, max_area),
-    step=1.0
-)
+# Sidebar for external website
+with st.sidebar:
+    min_area = dataframe['area'].min()
+    max_area = dataframe['area'].max()
+    price_range = st.slider(
+        'areaの指定',
+        min_area, max_area, (min_area, max_area),
+        step=1.0
+    )
 
-min_age_years = dataframe['age_years'].min()
-max_age_years = dataframe['age_years'].max()
-age_years_range = st.slider(
-    'age_yearsの指定',
-    min_age_years, max_age_years, (min_age_years, max_age_years)
-)
+    min_age_years = dataframe['age_years'].min()
+    max_age_years = dataframe['age_years'].max()
+    age_years_range = st.slider(
+        'age_yearsの指定',
+        min_age_years, max_age_years, (min_age_years, max_age_years)
+    )
 
 #条件に合わせたデータ絞り込み
 #セッションステートにしているのは逐次追加したかった時の名残
@@ -93,3 +95,11 @@ if "map" in selected["indices"]:
     st.session_state.candidates=pd.concat([st.session_state.candidates, dataframe.iloc[selected_index].to_frame().T])
     st.dataframe(st.session_state.candidates)
 
+
+st.markdown("### External Website")
+st.markdown(
+    """
+    <iframe src="https://www.example.com" width="100%" height="500"></iframe>
+    """,
+    unsafe_allow_html=True
+)
