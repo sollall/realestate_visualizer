@@ -116,3 +116,11 @@ def get_lat_lon(addresses):
         lats.append(lat)
     
     return lons,lats
+
+if __name__=="__main__":
+    data=get_estate_data_suumo(480)#page数多ければ減らして
+    lons,lats=get_lat_lon(data["address"].values)
+    data["lons"]=lons
+    data["lats"]=lats
+    data.to_csv("suumo_loc.csv")
+
