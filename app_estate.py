@@ -92,7 +92,8 @@ selected=event.selection
 
 if "map" in selected["indices"]:
     selected_index=selected["indices"]["map"][0]
-    st.session_state.candidates=pd.concat([st.session_state.candidates, dataframe.iloc[selected_index].to_frame().T])
+    selected_address=dataframe.iloc[selected_index]["address"]
+    st.session_state.candidates=pd.concat([st.session_state.candidates, dataframe[dataframe["address"]==selected_address]])
     st.dataframe(st.session_state.candidates)
 
 
