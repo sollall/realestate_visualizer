@@ -1,0 +1,70 @@
+name: Deploy Staging App for AWS
+
+on:
+  push:
+    branches:
+      - stage
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # リポジトリのセットアップ
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # AWS CLIのセットアップ
+      - name: Setup AWS CLI
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      # スクレイピングのデプロイ
+      # Lamda関数コードのパッケージ化
+      - name: Package Lambda function
+        run: |
+          cd ./aws/staging/scraping
+          bash make_lambda_zip.sh
+          cd ../../../
+      
+      # Lambda関数を更新
+      - name: Update Lambda function
+        run: |
+          aws lambda update-function-code \
+            --function-name TestScraping \
+            --zip-file fileb://lambda_function.zip
+          rm lambda_function.zip
+      
+      # Lambda関数の実行
+      - name: Invoke Lambda function
+        run: |
+          aws lambda invoke \
+            --function-name TestScraping \
+            output.json
+      
+      # Map表示のデプロイ
+      # ECRにログイン
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725237989.dkr.ecr.us-east-1.amazonaws.com
+      
+      # コンテナイメージをECRに送信
+      - name: Push Docker image to ECR
+        run: |
+          cd ./aws/staging/mapcreate
+          docker build -t realestate-vis/test-mapcreate .
+          docker tag realestate-vis/test-mapcreate:latest 851725237989.dkr.ecr.us-east-1.amazonaws.com/realestate-vis/test-mapcreate:latest
+          docker push 851725237989.dkr.ecr.us-east-1.amazonaws.com/realestate-vis/test-mapcreate:latest
+      
+      # ECSタスクの実行
+      - name: Run ECS Task
+        run: |
+          aws ecs run-task \
+            --cluster TestMapCreate \
+            --launch-type FARGATE \
+            --task-definition TestMapCreate \
+            --count 1 \
+            --network-configuration "awsvpcConfiguration={subnets=[subnet-0d62269214cdccf13,subnet-0efe4e8bc15b5d7bf,subnet-000e4fa596a1189b4, subnet-0662c92614254db51,subnet-0d0a918b55dd4f8d0,subnet-0fa8ff26f6a816532],securityGroups=[sg-0c66900abccb05d7c],assignPublicIp=ENABLED}"
