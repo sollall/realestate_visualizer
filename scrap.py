@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from retry import retry
 from tqdm import tqdm
 import urllib
+from datetime import datetime
 
 
 # 面積を抽出する関数
@@ -122,5 +123,7 @@ if __name__=="__main__":
     lons,lats=get_lat_lon(data["address"].values)
     data["lons"]=lons
     data["lats"]=lats
-    data.to_csv("suumo_loc.csv")
+
+    now = datetime.datetime.now()
+    data.to_csv(now.strftime("suumo_%Y%m%d.csv"))
 

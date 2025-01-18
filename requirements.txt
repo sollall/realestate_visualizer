@@ -1,6 +1,8 @@
 streamlit
 beautifulsoup4
 retry
-numpy
+numpy==1.26.4
 matplotlib
 tqdm
+japanize-matplotlib
+GPy
