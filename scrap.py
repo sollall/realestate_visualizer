@@ -4,6 +4,7 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 from retry import retry
+from multiprocessing import Pool
 from tqdm import tqdm
 import urllib
 from datetime import datetime
@@ -64,6 +65,46 @@ def load_page(url):
     return html
 
 
+def read_page(page_url):
+    #ここで並列化したい
+
+    html = load_page(page_url)
+    soup = BeautifulSoup(html.content, 'html.parser')
+    estates_groups = soup.find("div",class_='property_unit_group')
+    estates = estates_groups.find_all('div', class_='property_unit')
+
+    results=[]
+    
+    for estate in estates:
+        estate_info=estate.find_all('div', class_='dottable-line')
+
+        name_text=estate_info[0].find_all("dd")[0].text
+        name=extract_name(name_text)
+        
+        price_text=estate_info[1].find_all("dd")[0].text
+        price=extract_price(price_text)
+
+        adress_text=estate_info[2].find_all("dd")[0].text
+        adress=extract_area(adress_text)
+
+        area_text=estate_info[3].find_all("dd")[0].text
+        area=extract_area(area_text)
+        
+        built_date=estate_info[4].find_all("dd")[1].text
+        age_years,age_months=calculate_age(built_date)
+
+        results.append([
+            name,
+            price,
+            adress,
+            area,
+            age_years,
+            age_months,
+            float(price)/float(area)*3.30578
+        ])
+
+    return results
+
 def get_estate_data_suumo():
     # SUUMOを東京都23区のみ指定して検索して出力した画面のurl(ページ数フォーマットが必要)
     url = "https://suumo.jp/jj/bukken/ichiran/JJ010FJ001/?ar=030&bs=011&ta=13&jspIdFlg=patternShikugun&sc=13101&sc=13102&sc=13103&sc=13104&sc=13105&sc=13113&sc=13106&sc=13107&sc=13108&sc=13118&sc=13121&sc=13122&sc=13123&sc=13109&sc=13110&sc=13111&sc=13112&sc=13114&sc=13115&sc=13120&sc=13116&sc=13117&sc=13119&kb=1&kt=9999999&mb=0&mt=9999999&ekTjCd=&ekTjNm=&tj=0&cnb=0&cn=9999999&srch_navi={{2}}&page={}"
@@ -71,33 +112,6 @@ def get_estate_data_suumo():
     soup = BeautifulSoup(html.content, 'html.parser')
     MAX_PAGES=int(soup.find("ol",class_="pagination-parts").find_all("li")[-1].text)
 
-    def read_page(num):
-        #ここで並列化したい
-
-        html = load_page(url.format(num))
-        soup = BeautifulSoup(html.content, 'html.parser')
-        estates_groups = soup.find("div",class_='property_unit_group')
-        estates = estates_groups.find_all('div', class_='property_unit')
-
-        for estate in estates:
-            estate_info=estate.find_all('div', class_='dottable-line')
-
-            name_text=estate_info[0].find_all("dd")[0].text
-            info["name"].append(extract_name(name_text))
-            price_text=estate_info[1].find_all("dd")[0].text
-
-            info["price"].append(extract_price(price_text))
-            info["address"].append(estate_info[2].find_all("dd")[0].text)
-            area_text=estate_info[3].find_all("dd")[0].text
-            info["area"].append(extract_area(area_text))
-            built_date=estate_info[4].find_all("dd")[1].text
-            age_years,age_months=calculate_age(built_date)
-            info["age_years"].append(age_years)
-            info["age_months"].append(age_months)
-            info["price per unit area"].append(float(info["price"][-1])/float(info["area"][-1])*3.30578)
-
-        return 
-    
     info={"name":[],
           "price":[],
           "address":[],
@@ -106,13 +120,15 @@ def get_estate_data_suumo():
           "age_months":[],
           "price per unit area":[]
           }
-    
-    for page in range(1,MAX_PAGES):
-        print(page)
-        read_page(page)
 
+    with Pool(processes=6) as pool:
+        results_all=[]
+        with tqdm(total=MAX_PAGES) as pbar:
+            for result in pool.imap(read_page, [url.format(num) for num in range(1,MAX_PAGES)]):
+                results_all.extend(result)
+                pbar.update(1)
 
-    return pd.DataFrame(info)
+    return pd.DataFrame(results_all,columns=["name","price","address","area","age_years","age_months","price per unit area"])
 
 def get_lat_lon(addresses):
 
