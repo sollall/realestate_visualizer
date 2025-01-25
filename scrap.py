@@ -8,6 +8,7 @@ from multiprocessing import Pool
 from tqdm import tqdm
 import urllib
 from datetime import datetime
+import multiprocessing
 
 
 # 面積を抽出する関数
@@ -84,8 +85,7 @@ def read_page(page_url):
         price_text=estate_info[1].find_all("dd")[0].text
         price=extract_price(price_text)
 
-        adress_text=estate_info[2].find_all("dd")[0].text
-        adress=extract_area(adress_text)
+        adress=estate_info[2].find_all("dd")[0].text
 
         area_text=estate_info[3].find_all("dd")[0].text
         area=extract_area(area_text)
@@ -121,7 +121,7 @@ def get_estate_data_suumo():
           "price per unit area":[]
           }
 
-    with Pool(processes=6) as pool:
+    with Pool(processes=3) as pool:
         results_all=[]
         with tqdm(total=MAX_PAGES) as pbar:
             for result in pool.imap(read_page, [url.format(num) for num in range(1,MAX_PAGES)]):
@@ -130,19 +130,24 @@ def get_estate_data_suumo():
 
     return pd.DataFrame(results_all,columns=["name","price","address","area","age_years","age_months","price per unit area"])
 
+def search_address(address):
+    makeUrl = "https://msearch.gsi.go.jp/address-search/AddressSearch?q="
+    s_quote = urllib.parse.quote(address)
+    response=load_page(makeUrl + s_quote)
+    lon,lat=response.json()[0]["geometry"]["coordinates"]
+    return lon,lat
+
 def get_lat_lon(addresses):
 
+    LEN_ADDRESSES=len(addresses)
     lons=[]
     lats=[]
-    
-    for address in tqdm(addresses):
-        makeUrl = "https://msearch.gsi.go.jp/address-search/AddressSearch?q="
-        s_quote = urllib.parse.quote(address)
-        response=load_page(makeUrl + s_quote)
-        lon,lat=response.json()[0]["geometry"]["coordinates"]
-
-        lons.append(lon)
-        lats.append(lat)
+    with Pool(processes=multiprocessing.cpu_count()) as pool:
+        with tqdm(total=LEN_ADDRESSES) as pbar:
+            for result in pool.imap(search_address, addresses):
+                lons.append(result[0])
+                lats.append(result[1])
+                pbar.update(1)
     
     return lons,lats
 
