@@ -21,7 +21,9 @@ def extract_area(text):
 extract_area("50.00m2　（15.13m2）")
 
 def extract_name(text):
+    return text
     return text.split()[0]
+
 
 extract_name("給田西住宅\u3000１号棟")
 
@@ -136,6 +138,39 @@ def search_address(address):
     response=load_page(makeUrl + s_quote)
     lon,lat=response.json()[0]["geometry"]["coordinates"]
     return lon,lat
+
+def lcf(str1, str2):
+    dp = [[0] * (len(str2)+1) for i in range(len(str1)+1)]
+
+    for i, vi in enumerate(str1):
+        for j, vj in enumerate(str2):
+            if vi == vj:
+                dp[i+1][j+1] = dp[i][j] + 1
+            else:
+                dp[i+1][j+1] = max(dp[i+1][j], dp[i][j+1])
+    #print(dp[len(str1)][len(str2)])
+
+    ans = []
+    i = len(str1) - 1
+    j = len(str2) - 1
+    while i >= 0 and j >= 0:
+        if str1[i] == str2[j]:
+            ans.append(str1[i])
+            i -= 1
+            j -= 1
+        elif dp[i+1][j+1] == dp[i][j+1]:
+            i -= 1
+        elif dp[i+1][j+1] == dp[i+1][j]:
+            j -= 1
+    ans.reverse()
+    return "".join(ans)
+
+def extract_bukken_name(name_duplicated):
+    ans=name_duplicated[0]
+    for name in name_duplicated[1:]:
+        ans=lcf(ans,name)
+    
+    return ans
 
 def get_lat_lon(addresses):
 
