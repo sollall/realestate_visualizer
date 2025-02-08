@@ -10,6 +10,7 @@ import urllib
 from datetime import datetime
 import multiprocessing
 
+from transform import remove_duplicated_from_data
 
 # 面積を抽出する関数
 def extract_area(text):
@@ -114,15 +115,6 @@ def get_estate_data_suumo():
     soup = BeautifulSoup(html.content, 'html.parser')
     MAX_PAGES=int(soup.find("ol",class_="pagination-parts").find_all("li")[-1].text)
 
-    info={"name":[],
-          "price":[],
-          "address":[],
-          "area":[],
-          "age_years":[],
-          "age_months":[],
-          "price per unit area":[]
-          }
-
     with Pool(processes=3) as pool:
         results_all=[]
         with tqdm(total=MAX_PAGES) as pbar:
@@ -188,10 +180,12 @@ def get_lat_lon(addresses):
 
 if __name__=="__main__":
     data=get_estate_data_suumo()
-    lons,lats=get_lat_lon(data["address"].values)
-    data["lons"]=lons
-    data["lats"]=lats
+    data_treated=remove_duplicated_from_data(data)
+
+    lons,lats=get_lat_lon(data_treated["address"].values)
+    data_treated["lons"]=lons
+    data_treated["lats"]=lats
 
     now = datetime.now()
-    data.to_csv(now.strftime("suumo_%Y%m%d.csv"))
+    data_treated.to_csv(now.strftime("suumo_%Y%m%d.csv"))
 
