@@ -19,14 +19,8 @@ def extract_area(text):
         return float(match.group(1))
     return None
 
-extract_area("50.00m2　（15.13m2）")
-
 def extract_name(text):
     return text
-    return text.split()[0]
-
-
-extract_name("給田西住宅\u3000１号棟")
 
 def extract_price(text):
     text = text.strip()
@@ -67,7 +61,6 @@ def calculate_age(built_date):
 def load_page(url):
     html = requests.get(url)
     return html
-
 
 def read_page(page_url):
     #ここで並列化したい
