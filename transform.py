@@ -117,7 +117,7 @@ def remove_duplicated_from_data(df):
         #address_familyの中にaddressより長いものがあればうれしい
         address_family=df[df["address"].str.contains(address)]
         common=extract_common_from_name(address_family["address"].values)
-        long_address_family=df[lambda df: df['address'].str.len() > len(common)]
+        long_address_family=address_family[lambda address_family: address_family['address'].str.len() > len(common)]
 
         if len(long_address_family):
             short_addresses.append(common)
