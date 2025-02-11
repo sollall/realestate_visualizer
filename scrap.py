@@ -148,4 +148,5 @@ if __name__=="__main__":
 
     now = datetime.now()
     data_treated.to_csv(now.strftime("suumo_%Y%m%d.csv"))
+    data_treated.to_csv("suumo_streamlit.csv")
 

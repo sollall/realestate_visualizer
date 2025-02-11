@@ -3,7 +3,7 @@ import pydeck as pdk
 import pandas as pd
 import numpy as np
 
-dataframe=pd.read_csv("suumo_20250211.csv",index_col=0)
+dataframe=pd.read_csv("suumo_streamlit.csv",index_col=0)
 
 # Function to scale colors
 def scale_color(value, min_value, max_value):
@@ -24,7 +24,7 @@ def scale_color(value, min_value, max_value):
     return colors[index]
 
 # Apply the function to create a color column
-dataframe["log_price"] = dataframe["price per unit area"].apply(lambda x: np.log(x))
+dataframe["log_price"] = dataframe["price per unit area"].apply(lambda x: np.log10(x))
 min_value = dataframe['log_price'].min()
 max_value = dataframe['log_price'].max()
 dataframe['color'] = dataframe['log_price'].apply(lambda x: scale_color(x, min_value, max_value))
