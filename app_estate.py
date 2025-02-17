@@ -3,7 +3,7 @@ import pydeck as pdk
 import pandas as pd
 import numpy as np
 
-dataframe=pd.read_csv("suumo_streamlit.csv",index_col=0)
+dataframe=pd.read_csv("suumo_analytics.csv",index_col=0)
 
 # Function to scale colors
 def scale_color(value, min_value, max_value):

@@ -96,7 +96,6 @@ def read_page(page_url):
             area,
             age_years,
             age_months,
-            float(price)/float(area)*3.30578
         ])
 
     return results
@@ -115,7 +114,7 @@ def get_estate_data_suumo():
                 results_all.extend(result)
                 pbar.update(1)
 
-    return pd.DataFrame(results_all,columns=["name","price","address","area","age_years","age_months","price per unit area"])
+    return pd.DataFrame(results_all,columns=["name","price","address","area","age_years","age_months"])
 
 def search_address(address):
     makeUrl = "https://msearch.gsi.go.jp/address-search/AddressSearch?q="
@@ -139,14 +138,16 @@ def get_lat_lon(addresses):
     return lons,lats
 
 if __name__=="__main__":
+    now = datetime.now()
     data=get_estate_data_suumo()
+    data.to_csv(now.strftime("suumo_%Y%m%d.csv"))
+
     data_treated=remove_duplicated_from_data(data)
 
+    data_treated["price per unit area"]=data_treated["price"]/data_treated["area"]*3.30578
     lons,lats=get_lat_lon(data_treated["address"].values)
     data_treated["lons"]=lons
     data_treated["lats"]=lats
 
-    now = datetime.now()
-    data_treated.to_csv(now.strftime("suumo_%Y%m%d.csv"))
-    data_treated.to_csv("suumo_streamlit.csv")
+    data_treated.to_csv("suumo_analytics.csv")
 

@@ -95,7 +95,6 @@ def remove_duplication(data):
                     area,
                     samename["age_years"].values[0],
                     samename["age_months"].values[0],
-                    samename["price per unit area"].values[0]
                 ]
 
                 data_treated.append(record)
