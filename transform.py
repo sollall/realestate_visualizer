@@ -1,5 +1,6 @@
 from tqdm import tqdm
 import pandas as pd
+from datetime import datetime
 import unicodedata
 
 def lcf(str1, str2):
@@ -95,6 +96,9 @@ def remove_duplication(data):
                     area,
                     samename["age_years"].values[0],
                     samename["age_months"].values[0],
+                    samename["price per unit area"].values[0],
+                    samename["lons"].values[0],
+                    samename["lats"].values[0]
                 ]
 
                 data_treated.append(record)
@@ -115,6 +119,10 @@ def remove_duplicated_from_data(df):
     for address in tqdm(address_set):
         #address_familyの中にaddressより長いものがあればうれしい
         address_family=df[df["address"].str.contains(address)]
+        if len(address_family)==0:
+            print(f"ないよ:{address_family}")
+            continue
+
         common=extract_common_from_name(address_family["address"].values)
         long_address_family=address_family[lambda address_family: address_family['address'].str.len() > len(common)]
 
@@ -131,3 +139,12 @@ def remove_duplicated_from_data(df):
         records.extend(local_recodes)
 
     return pd.DataFrame(records,columns=df.columns)
+
+if __name__=="__main__":
+    #ここ以下だめ
+    now = datetime.now()
+    data=pd.read_csv(now.strftime("suumo_%Y%m%d.csv"),index_col=0)
+
+    data_treated=remove_duplicated_from_data(data)
+
+    data_treated.to_csv("suumo_analytics.csv")

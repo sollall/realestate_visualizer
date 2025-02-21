@@ -140,14 +140,14 @@ def get_lat_lon(addresses):
 if __name__=="__main__":
     now = datetime.now()
     data=get_estate_data_suumo()
+    
+
+    data["price per unit area"]=data["price"]/data["area"]*3.30578
+    lons,lats=get_lat_lon(data["address"].values)
+    data["lons"]=lons
+    data["lats"]=lats
+
     data.to_csv(now.strftime("suumo_%Y%m%d.csv"))
 
-    data_treated=remove_duplicated_from_data(data)
-
-    data_treated["price per unit area"]=data_treated["price"]/data_treated["area"]*3.30578
-    lons,lats=get_lat_lon(data_treated["address"].values)
-    data_treated["lons"]=lons
-    data_treated["lats"]=lats
-
-    data_treated.to_csv("suumo_analytics.csv")
+    
 
