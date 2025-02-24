@@ -141,7 +141,6 @@ def remove_duplicated_from_data(df):
     return pd.DataFrame(records,columns=df.columns)
 
 if __name__=="__main__":
-    #ここ以下だめ
     now = datetime.now()
     data=pd.read_csv(now.strftime("suumo_%Y%m%d.csv"),index_col=0)
 

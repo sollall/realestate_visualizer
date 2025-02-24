@@ -10,8 +10,6 @@ import urllib
 from datetime import datetime
 import multiprocessing
 
-from transform import remove_duplicated_from_data
-
 # 面積を抽出する関数
 def extract_area(text):
     match = re.search(r'(\d+(\.\d+)?)m2', text)
@@ -140,7 +138,6 @@ def get_lat_lon(addresses):
 if __name__=="__main__":
     now = datetime.now()
     data=get_estate_data_suumo()
-    
 
     data["price per unit area"]=data["price"]/data["area"]*3.30578
     lons,lats=get_lat_lon(data["address"].values)
