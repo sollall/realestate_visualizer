@@ -3,12 +3,14 @@ import pydeck as pdk
 import pandas as pd
 import numpy as np
 
-dataframe=pd.read_csv("suumo_analytics.csv",index_col=0)
+from utils import sigmoid
+
+dataframe=pd.read_csv("suumo_20250223.csv",index_col=0)
 
 # Function to scale colors
-def scale_color(value, min_value, max_value):
+def scale_color(value, gain=0.000003, offset=-4000000):
     # Normalize the value to be between 0 and 1
-    normalized = (value - min_value) / (max_value - min_value)
+    normalized=sigmoid(value,gain=gain,offset_x=offset)
     # Define a 7-color scale (e.g., from blue to red)
     colors = [
         [0, 0, 255, 160],   # Blue
@@ -24,10 +26,7 @@ def scale_color(value, min_value, max_value):
     return colors[index]
 
 # Apply the function to create a color column
-dataframe["log_price"] = dataframe["price per unit area"].apply(lambda x: np.log10(x))
-min_value = dataframe['log_price'].min()
-max_value = dataframe['log_price'].max()
-dataframe['color'] = dataframe['log_price'].apply(lambda x: scale_color(x, min_value, max_value))
+dataframe['color'] = dataframe['price per unit area'].apply(lambda x: scale_color(x))
 
 
 # 絞り込み条件の設定
