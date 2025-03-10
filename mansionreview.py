@@ -80,6 +80,6 @@ if __name__=="__main__":
     data["lons"]=lons
     data["lats"]=lats
 
-    data.to_csv(now.strftime("mansionreview_%Y%m%d.csv"))
+    data.to_csv(now.strftime("mansionreview/mansionreview_%Y%m%d.csv"))
 
 
