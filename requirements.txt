@@ -6,3 +6,4 @@ matplotlib
 tqdm
 japanize-matplotlib
 GPy
+cmcrameri

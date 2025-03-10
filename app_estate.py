@@ -3,12 +3,14 @@ import pydeck as pdk
 import pandas as pd
 import numpy as np
 
-dataframe=pd.read_csv("suumo_streamlit.csv",index_col=0)
+from utils import sigmoid
+
+dataframe=pd.read_csv("mansionreview_20250305.csv",index_col=0)
 
 # Function to scale colors
-def scale_color(value, min_value, max_value):
+def scale_color(value, gain=0.01, offset=-400):
     # Normalize the value to be between 0 and 1
-    normalized = (value - min_value) / (max_value - min_value)
+    normalized=sigmoid(value,gain=gain,offset_x=offset)
     # Define a 7-color scale (e.g., from blue to red)
     colors = [
         [0, 0, 255, 160],   # Blue
@@ -24,34 +26,32 @@ def scale_color(value, min_value, max_value):
     return colors[index]
 
 # Apply the function to create a color column
-dataframe["log_price"] = dataframe["price per unit area"].apply(lambda x: np.log10(x))
-min_value = dataframe['log_price'].min()
-max_value = dataframe['log_price'].max()
-dataframe['color'] = dataframe['log_price'].apply(lambda x: scale_color(x, min_value, max_value))
+dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
 
 
 # 絞り込み条件の設定
 # Sidebar for external website
 with st.sidebar:
-    min_area = dataframe['area'].min()
-    max_area = dataframe['area'].max()
+    min_area = dataframe['面積'].min()
+    max_area = min(150.0,dataframe['面積'].max())
     price_range = st.slider(
-        'areaの指定',
+        '面積の指定',
         min_area, max_area, (min_area, max_area),
         step=1.0
     )
 
-    min_age_years = dataframe['age_years'].min()
-    max_age_years = dataframe['age_years'].max()
+    min_age_years = max(0.0,dataframe['築年数'].min())
+    max_age_years = min(60.0,dataframe['築年数'].max())
     age_years_range = st.slider(
-        'age_yearsの指定',
-        min_age_years, max_age_years, (min_age_years, max_age_years)
+        '築年数の指定',
+        min_age_years, max_age_years, (min_age_years, max_age_years),
+        step=1.0
     )
 
 #条件に合わせたデータ絞り込み
 #セッションステートにしているのは逐次追加したかった時の名残
-dataframe=dataframe[(dataframe['area']>=price_range[0]) & (dataframe['area']<=price_range[1])]
-dataframe=dataframe[(dataframe['age_years']>=age_years_range[0]) & (dataframe['age_years']<=age_years_range[1])]
+dataframe=dataframe[(dataframe['面積']>=price_range[0]) & (dataframe['面積']<=price_range[1])]
+dataframe=dataframe[(dataframe['築年数']>=age_years_range[0]) & (dataframe['築年数']<=age_years_range[1])]
 data = dataframe.to_dict(orient='records')
 st.session_state.candidates=pd.DataFrame(columns=dataframe.columns)
 
@@ -92,8 +92,8 @@ selected=event.selection
 
 if "map" in selected["indices"]:
     selected_index=selected["indices"]["map"][0]
-    selected_address=dataframe.iloc[selected_index]["address"]
-    st.session_state.candidates=pd.concat([st.session_state.candidates, dataframe[dataframe["address"]==selected_address]])
+    selected_address=dataframe.iloc[selected_index]["住所"]
+    st.session_state.candidates=pd.concat([st.session_state.candidates, dataframe[dataframe["住所"]==selected_address]])
     st.dataframe(st.session_state.candidates)
 
 

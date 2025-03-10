@@ -10,8 +10,6 @@ import urllib
 from datetime import datetime
 import multiprocessing
 
-from transform import remove_duplicated_from_data
-
 # 面積を抽出する関数
 def extract_area(text):
     match = re.search(r'(\d+(\.\d+)?)m2', text)
@@ -96,7 +94,6 @@ def read_page(page_url):
             area,
             age_years,
             age_months,
-            float(price)/float(area)*3.30578
         ])
 
     return results
@@ -115,7 +112,7 @@ def get_estate_data_suumo():
                 results_all.extend(result)
                 pbar.update(1)
 
-    return pd.DataFrame(results_all,columns=["name","price","address","area","age_years","age_months","price per unit area"])
+    return pd.DataFrame(results_all,columns=["name","price","address","area","age_years","age_months"])
 
 def search_address(address):
     makeUrl = "https://msearch.gsi.go.jp/address-search/AddressSearch?q="
@@ -139,14 +136,15 @@ def get_lat_lon(addresses):
     return lons,lats
 
 if __name__=="__main__":
-    data=get_estate_data_suumo()
-    data_treated=remove_duplicated_from_data(data)
-
-    lons,lats=get_lat_lon(data_treated["address"].values)
-    data_treated["lons"]=lons
-    data_treated["lats"]=lats
-
     now = datetime.now()
-    data_treated.to_csv(now.strftime("suumo_%Y%m%d.csv"))
-    data_treated.to_csv("suumo_streamlit.csv")
+    data=get_estate_data_suumo()
+
+    data["price per unit area"]=data["price"]/data["area"]*3.30578
+    lons,lats=get_lat_lon(data["address"].values)
+    data["lons"]=lons
+    data["lats"]=lats
+
+    data.to_csv(now.strftime("suumo_%Y%m%d.csv"))
+
+    
 
