@@ -1,6 +1,7 @@
 # データの取得
 ```
 python scrap.py
+python mansionreview.py
 ```
 ※動作確認してない
 
