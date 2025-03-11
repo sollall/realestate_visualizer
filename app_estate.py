@@ -1,11 +1,10 @@
 import streamlit as st
 import pydeck as pdk
 import pandas as pd
-import numpy as np
 
 from utils import sigmoid
 
-dataframe=pd.read_csv("mansionreview_20250305.csv",index_col=0)
+dataframe=pd.read_csv("mansionreview/mansionreview_20250311.csv",index_col=0)
 
 # Function to scale colors
 def scale_color(value, gain=0.01, offset=-400):

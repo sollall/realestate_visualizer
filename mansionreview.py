@@ -6,7 +6,7 @@ import pandas as pd
 import re
 from datetime import datetime
 
-from scrap import get_lat_lon
+from utils import get_lat_lon
 
 def scrap_from_search(url):
     
