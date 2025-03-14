@@ -38,16 +38,16 @@ with st.sidebar:
     '対象からの差分をとりたいデータ',
     [None]+os.listdir(target_folder)[1:][::-1])
 
-    min_area = dataframe['面積'].min()
-    max_area = min(150.0,dataframe['面積'].max())
+    min_area = 0.0
+    max_area = 150.0
     price_range = st.slider(
         '面積の指定',
         min_area, max_area, (min_area, max_area),
         step=1.0
     )
 
-    min_age_years = max(0.0,dataframe['築年数'].min())
-    max_age_years = min(60.0,dataframe['築年数'].max())
+    min_age_years = 0.0
+    max_age_years = 60.0
     age_years_range = st.slider(
         '築年数の指定',
         min_age_years, max_age_years, (min_age_years, max_age_years),
