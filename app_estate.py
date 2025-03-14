@@ -1,10 +1,9 @@
 import streamlit as st
 import pydeck as pdk
 import pandas as pd
+import os
 
-from utils import sigmoid
-
-dataframe=pd.read_csv("mansionreview/mansionreview_20250311.csv",index_col=0)
+from utils import sigmoid,get_diff_records
 
 # Function to scale colors
 def scale_color(value, gain=0.01, offset=-400):
@@ -24,13 +23,21 @@ def scale_color(value, gain=0.01, offset=-400):
     index = int(normalized * (len(colors) - 1))
     return colors[index]
 
-# Apply the function to create a color column
-dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
-
-
+# 対象のdataframeの選択
 # 絞り込み条件の設定
 # Sidebar for external website
 with st.sidebar:
+    target_folder=st.selectbox(
+    '対象のデータを含むフォルダ',
+    ['mansionreview', 'suumo'])
+    base_data_name=st.selectbox(
+    '対象のデータ',
+    os.listdir(target_folder)[1:][::-1])
+
+    diff_data_name=st.selectbox(
+    '対象からの差分をとりたいデータ',
+    [None]+os.listdir(target_folder)[1:][::-1])
+
     min_area = dataframe['面積'].min()
     max_area = min(150.0,dataframe['面積'].max())
     price_range = st.slider(
@@ -47,6 +54,20 @@ with st.sidebar:
         step=1.0
     )
 
+#flag
+diff_mode=True if diff_data_name else False
+
+#データの読み込み
+if diff_mode:
+    today=pd.read_csv(f"{target_folder}/{base_data_name}",index_col=0)
+    yesterday=pd.read_csv(f"{target_folder}/{diff_data_name}",index_col=0)
+    dataframe,_=get_diff_records(today,yesterday)
+else:
+    dataframe=pd.read_csv(f"{target_folder}/{base_data_name}",index_col=0)
+
+# Apply the function to create a color column
+dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
+
 #条件に合わせたデータ絞り込み
 #セッションステートにしているのは逐次追加したかった時の名残
 dataframe=dataframe[(dataframe['面積']>=price_range[0]) & (dataframe['面積']<=price_range[1])]
@@ -61,7 +82,7 @@ layer = pdk.Layer(
     data=data,
     get_position="[lons, lats]",
     get_color="color",
-    get_radius=30,
+    get_radius=100 if diff_mode else 30,
     pickable=True,
     auto_highlight=True,
     id="map",

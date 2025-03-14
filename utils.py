@@ -6,6 +6,7 @@ import multiprocessing
 from multiprocessing import Pool
 from tqdm import tqdm
 import urllib
+import pandas as pd
 
 def sigmoid(x, gain=1, offset_x=0):
     return ((np.tanh(((x+offset_x)*gain)/2)+1)/2)
@@ -36,3 +37,11 @@ def get_lat_lon(addresses):
                 pbar.update(1)
     
     return lons,lats
+
+def get_diff_records(today,yesterday):
+    diff=pd.merge(today,yesterday, on=["建物名","面積"], how ="outer", indicator=True).query(f'_merge != "both"')
+    
+    apeared=diff[diff["_merge"]=="left_only"]
+    banished=diff[diff["_merge"]=="right_only"]
+
+    return apeared.merge(today,on=["建物名","面積"],how="left"),banished.merge(yesterday,on=["建物名","面積"],how="left")
