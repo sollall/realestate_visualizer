@@ -4,8 +4,6 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from multiprocessing import Pool
 from tqdm import tqdm
-from datetime import datetime
-
 
 from utils import load_page,get_lat_lon
 
