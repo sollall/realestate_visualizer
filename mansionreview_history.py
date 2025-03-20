@@ -68,7 +68,7 @@ def init_browser_queue(num_browsers):
 
     # 事前に複数のブラウザを作成してキューに入れる
     for _ in range(num_browsers):
-        browser = webdriver.Chrome()
+        browser = signin_browser()
         browser_queue.put(browser)
 
     return browser_queue
