@@ -104,13 +104,15 @@ def scrap_from_search(search_url):
     return results_all
     
 if __name__ == "__main__":
-
-    MAX_PAGES=1
-    MAX_PARA=1#multiprocessing.cpu_count()
+    
+    MAX_PARA=multiprocessing.cpu_count()
     browser_queue=init_browser_queue(MAX_PARA)
     result_queue = Queue()
 
     search_url_format="https://www.mansion-review.jp/mansion/city/659_{}.html"
+    html = load_page(search_url_format.format(1))
+    soup = BeautifulSoup(html.content, 'html.parser')
+    MAX_PAGES=int(soup.find_all("li",class_="c-pagination-list__item")[-1].text.strip())
     search_urls=[search_url_format.format(num) for num in range(1,MAX_PAGES+1)]
 
     # tqdmの進捗バー
@@ -125,8 +127,6 @@ if __name__ == "__main__":
     while not result_queue.empty():
         result = result_queue.get()
         pre_dataframe.extend(result)
-    
-    print(pre_dataframe)
 
     df=pd.DataFrame(pre_dataframe,columns=[  "建物名",
                                              "トランザクションid",
