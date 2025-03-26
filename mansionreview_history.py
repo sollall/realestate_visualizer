@@ -19,6 +19,8 @@ import password
 def signin_browser():
     #googlechromeを起動
     browser = webdriver.Chrome()
+    #timeoutを設定
+    browser.command_executor.set_timeout(1000)
     #chromeドライバーが見つかるまでの待ち時間を設定
     browser.implicitly_wait(3)
 
@@ -54,11 +56,15 @@ def get_bukken_history(browser,url):
 
     bukken_name=soup.find("span",class_="title_span").text
     bukken_infos=[]
-    bukken_html_list=soup.find("table",class_="tekisei_kakaku_sindan_list_area table_heading_fixed js_table_heading_fixed js_sticky_detection").find_all("tr")[1:-2]
-    for bukken_html in bukken_html_list:
-        bukken_td=bukken_html.find_all("td")
-        bukken_info=[bukken_name]+[item.text for item in bukken_td]
-        bukken_infos.append(bukken_info)
+
+    try:
+        bukken_html_list=soup.find("table",class_="tekisei_kakaku_sindan_list_area table_heading_fixed js_table_heading_fixed js_sticky_detection").find_all("tr")[1:-2]
+        for bukken_html in bukken_html_list:
+            bukken_td=bukken_html.find_all("td")
+            bukken_info=[bukken_name]+[item.text for item in bukken_td]
+            bukken_infos.append(bukken_info)
+    except AttributeError:
+        pass
 
     return bukken_infos
 
@@ -102,14 +108,20 @@ def scrap_from_search(search_url):
         thread.join()
 
     return results_all
-    
+
+def clean_text(text):
+    # タブや改行をスペースに置き換え、不要なスペースを削除
+    cleaned = re.sub(r'\s+', ' ', text).strip()
+    return cleaned
+
 if __name__ == "__main__":
     
-    MAX_PARA=multiprocessing.cpu_count()
+    MAX_PARA=8#multiprocessing.cpu_count()
     browser_queue=init_browser_queue(MAX_PARA)
     result_queue = Queue()
 
-    search_url_format="https://www.mansion-review.jp/mansion/city/659_{}.html"
+    file_name="蔵前"
+    search_url_format="https://www.mansion-review.jp/mansion/station/9930112_{}.html"
     html = load_page(search_url_format.format(1))
     soup = BeautifulSoup(html.content, 'html.parser')
     MAX_PAGES=int(soup.find_all("li",class_="c-pagination-list__item")[-1].text.strip())
@@ -129,7 +141,7 @@ if __name__ == "__main__":
         pre_dataframe.extend(result)
 
     df=pd.DataFrame(pre_dataframe,columns=[  "建物名",
-                                             "トランザクションid",
+                                             "id",
                                              "販売年月",
                                              "販売終了年月",
                                              "所在階",
@@ -145,4 +157,6 @@ if __name__ == "__main__":
                                              "管理費(㎡管理費)",
                                              "修繕積立金(㎡修繕積立金)"
                                             ])
-    df.to_csv(f"mansionreview_history_{datetime.now().strftime('%Y%m%d')}.csv")
+    
+    df["販売終了年月"]=df["販売終了年月"].apply(clean_text)
+    df.to_csv(f"history/{file_name}.csv")
