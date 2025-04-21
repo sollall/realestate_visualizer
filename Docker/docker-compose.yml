@@ -20,5 +20,14 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: django_sample
 
+  updater:
+    image: alpine
+    volumes:
+      - ./scripts:/scripts
+    entrypoint: >
+      /bin/sh -c "crontab /scripts/cronjob && crond -f"
+    depends_on:
+      - db
+
 volumes:
   postgres_data:
