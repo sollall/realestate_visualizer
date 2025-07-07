@@ -12,6 +12,7 @@ import re
 from datetime import datetime
 import time
 import threading
+import argparse
 
 import password
 
@@ -114,21 +115,37 @@ def clean_text(text):
     cleaned = re.sub(r'\s+', ' ', text).strip()
     return cleaned
 
+def to_format_url(original_url: str) -> str:
+    if not original_url.endswith(".html"):
+        raise ValueError("URLが .html で終わっていません")
+
+    base = original_url[:-5]  # ".html" を取り除く
+    return f"{base}_{{}}.html"
+
 if __name__ == "__main__":
     
+    parser = argparse.ArgumentParser()
+    parser.add_argument("search_url", help="検索用のURLを指定してください")
+    args = parser.parse_args()
+
+    search_url = args.search_url
+
+
     MAX_PARA=8#multiprocessing.cpu_count()
     browser_queue=init_browser_queue(MAX_PARA)
     result_queue = Queue()
 
-    file_name="蔵前"
-    search_url_format="https://www.mansion-review.jp/mansion/station/9930112_{}.html"
-    html = load_page(search_url_format.format(1))
+    html = load_page(search_url)
     soup = BeautifulSoup(html.content, 'html.parser')
+    file_name="元住吉" #
     MAX_PAGES=int(soup.find_all("li",class_="c-pagination-list__item")[-1].text.strip())
+
+    search_url_format=to_format_url(search_url)
     search_urls=[search_url_format.format(num) for num in range(1,MAX_PAGES+1)]
 
     # tqdmの進捗バー
     progress_bar = tqdm(total=len(search_urls))
+    
 
     for url in search_urls:
         scrap_from_search(url)
