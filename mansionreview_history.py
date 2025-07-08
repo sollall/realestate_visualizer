@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium import webdriver
-from scrap import load_page
+from utils import load_page
 import multiprocessing
 from multiprocessing import Pool
 from queue import Queue
@@ -122,6 +122,8 @@ def to_format_url(original_url: str) -> str:
     base = original_url[:-5]  # ".html" を取り除く
     return f"{base}_{{}}.html"
 
+
+
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
@@ -130,18 +132,18 @@ if __name__ == "__main__":
 
     search_url = args.search_url
 
-
-    MAX_PARA=8#multiprocessing.cpu_count()
-    browser_queue=init_browser_queue(MAX_PARA)
-    result_queue = Queue()
-
     html = load_page(search_url)
     soup = BeautifulSoup(html.content, 'html.parser')
-    file_name="元住吉" #
+    file_name=re.sub(r'の中古マンションランキング.*', '', soup.find("title").text.strip())
+    print(f"ファイル名: {file_name}")
     MAX_PAGES=int(soup.find_all("li",class_="c-pagination-list__item")[-1].text.strip())
 
     search_url_format=to_format_url(search_url)
     search_urls=[search_url_format.format(num) for num in range(1,MAX_PAGES+1)]
+
+    MAX_PARA=8#multiprocessing.cpu_count()
+    browser_queue=init_browser_queue(MAX_PARA)
+    result_queue = Queue()
 
     # tqdmの進捗バー
     progress_bar = tqdm(total=len(search_urls))
