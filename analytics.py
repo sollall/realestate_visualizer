@@ -18,7 +18,7 @@ with st.sidebar:
     ['history'])
     base_data_name=st.selectbox(
     '対象のデータ',
-    os.listdir(target_folder)[1:][::-1])
+    [f for f in os.listdir("history") if f.endswith(".csv")])
 
     min_area = 0.0
     max_area = 150.0
