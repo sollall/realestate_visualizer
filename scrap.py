@@ -1,14 +1,11 @@
 import pandas as pd
 import re
 from datetime import datetime
-import requests
 from bs4 import BeautifulSoup
-from retry import retry
 from multiprocessing import Pool
 from tqdm import tqdm
-import urllib
-from datetime import datetime
-import multiprocessing
+
+from utils import load_page,get_lat_lon
 
 # 面積を抽出する関数
 def extract_area(text):
@@ -53,12 +50,6 @@ def calculate_age(built_date):
         age_months += 12
 
     return age_years,age_months
-
-# リクエストがうまく行かないパターンを回避するためのやり直し
-@retry(tries=3, delay=10, backoff=2)
-def load_page(url):
-    html = requests.get(url)
-    return html
 
 def read_page(page_url):
     #ここで並列化したい
@@ -114,27 +105,6 @@ def get_estate_data_suumo():
 
     return pd.DataFrame(results_all,columns=["name","price","address","area","age_years","age_months"])
 
-def search_address(address):
-    makeUrl = "https://msearch.gsi.go.jp/address-search/AddressSearch?q="
-    s_quote = urllib.parse.quote(address)
-    response=load_page(makeUrl + s_quote)
-    lon,lat=response.json()[0]["geometry"]["coordinates"]
-    return lon,lat
-
-def get_lat_lon(addresses):
-
-    LEN_ADDRESSES=len(addresses)
-    lons=[]
-    lats=[]
-    with Pool(processes=multiprocessing.cpu_count()) as pool:
-        with tqdm(total=LEN_ADDRESSES) as pbar:
-            for result in pool.imap(search_address, addresses):
-                lons.append(result[0])
-                lats.append(result[1])
-                pbar.update(1)
-    
-    return lons,lats
-
 if __name__=="__main__":
     now = datetime.now()
     data=get_estate_data_suumo()
@@ -144,7 +114,7 @@ if __name__=="__main__":
     data["lons"]=lons
     data["lats"]=lats
 
-    data.to_csv(now.strftime("suumo_%Y%m%d.csv"))
+    data.to_csv(now.strftime("suumo/suumo_%Y%m%d.csv"))
 
     
 

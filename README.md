@@ -9,4 +9,5 @@ python mansionreview.py
 
 ```
 streamlit run app_estate.py
+streamlit run analytics.py
 ```

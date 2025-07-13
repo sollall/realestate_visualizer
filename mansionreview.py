@@ -6,7 +6,7 @@ import pandas as pd
 import re
 from datetime import datetime
 
-from scrap import get_lat_lon
+from utils import get_lat_lon
 
 def scrap_from_search(url):
     
@@ -80,6 +80,6 @@ if __name__=="__main__":
     data["lons"]=lons
     data["lats"]=lats
 
-    data.to_csv(now.strftime("mansionreview_%Y%m%d.csv"))
+    data.to_csv(now.strftime("mansionreview/mansionreview_%Y%m%d.csv"))
 
 

@@ -7,3 +7,5 @@ tqdm
 japanize-matplotlib
 GPy
 cmcrameri
+selenium
+streamlit-aggrid

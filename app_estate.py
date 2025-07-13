@@ -1,11 +1,9 @@
 import streamlit as st
 import pydeck as pdk
 import pandas as pd
-import numpy as np
+import os
 
-from utils import sigmoid
-
-dataframe=pd.read_csv("mansionreview_20250305.csv",index_col=0)
+from utils import sigmoid,get_diff_records
 
 # Function to scale colors
 def scale_color(value, gain=0.01, offset=-400):
@@ -25,28 +23,50 @@ def scale_color(value, gain=0.01, offset=-400):
     index = int(normalized * (len(colors) - 1))
     return colors[index]
 
-# Apply the function to create a color column
-dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
-
-
+# 対象のdataframeの選択
 # 絞り込み条件の設定
 # Sidebar for external website
 with st.sidebar:
-    min_area = dataframe['面積'].min()
-    max_area = min(150.0,dataframe['面積'].max())
+    target_folder=st.selectbox(
+    '対象のデータを含むフォルダ',
+    ['mansionreview', 'suumo'])
+    base_data_name=st.selectbox(
+    '対象のデータ',
+    os.listdir(target_folder)[1:][::-1])
+
+    diff_data_name=st.selectbox(
+    '対象からの差分をとりたいデータ',
+    [None]+os.listdir(target_folder)[1:][::-1])
+
+    min_area = 0.0
+    max_area = 150.0
     price_range = st.slider(
         '面積の指定',
         min_area, max_area, (min_area, max_area),
         step=1.0
     )
 
-    min_age_years = max(0.0,dataframe['築年数'].min())
-    max_age_years = min(60.0,dataframe['築年数'].max())
+    min_age_years = 0.0
+    max_age_years = 60.0
     age_years_range = st.slider(
         '築年数の指定',
         min_age_years, max_age_years, (min_age_years, max_age_years),
         step=1.0
     )
+
+#flag
+diff_mode=True if diff_data_name else False
+
+#データの読み込み
+if diff_mode:
+    today=pd.read_csv(f"{target_folder}/{base_data_name}",index_col=0)
+    yesterday=pd.read_csv(f"{target_folder}/{diff_data_name}",index_col=0)
+    dataframe,_=get_diff_records(today,yesterday)
+else:
+    dataframe=pd.read_csv(f"{target_folder}/{base_data_name}",index_col=0)
+
+# Apply the function to create a color column
+dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
 
 #条件に合わせたデータ絞り込み
 #セッションステートにしているのは逐次追加したかった時の名残
@@ -62,7 +82,7 @@ layer = pdk.Layer(
     data=data,
     get_position="[lons, lats]",
     get_color="color",
-    get_radius=30,
+    get_radius=100 if diff_mode else 30,
     pickable=True,
     auto_highlight=True,
     id="map",
