@@ -7,7 +7,7 @@ from st_aggrid.grid_options_builder import GridOptionsBuilder
 #add
 from st_aggrid.shared import GridUpdateMode
 
-st.set_page_config(page_title="Netflix Shows", layout="wide") 
+st.set_page_config(page_title="過去の取引履歴", layout="wide") 
 st.title("analysis")
 
 # 絞り込み条件の設定
