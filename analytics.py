@@ -36,11 +36,21 @@ with st.sidebar:
         step=1.0
     )
 
+#販売終了年月が空白のでーたは表示しないようにするか切り替えられるボタンがほしい
+hide_empty = st.checkbox("販売終了年月が空白のデータを表示しない", value=True)
+
 shows = pd.read_csv(f"{target_folder}/{base_data_name}",index_col=0)
 gb = GridOptionsBuilder.from_dataframe(shows)
 
 # ---
 shows=shows[(shows['専有面積']>=price_range[0]) & (shows['専有面積']<=price_range[1])]
+# データのフィルタリング
+if hide_empty:
+    # NaNまたは空文字列を除く
+    shows = shows[shows["販売終了年月"] != "ー"]
+else:
+    shows = shows
+
 
 gb.configure_selection(selection_mode="multiple", use_checkbox=True)
 
