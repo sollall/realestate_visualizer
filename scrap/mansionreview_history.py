@@ -178,4 +178,4 @@ if __name__ == "__main__":
                                             ])
     
     df["販売終了年月"]=df["販売終了年月"].apply(clean_text)
-    df.to_csv(f"history/{file_name}.csv")
+    df.to_csv(f"data/transactionhistory/{file_name}.csv")
