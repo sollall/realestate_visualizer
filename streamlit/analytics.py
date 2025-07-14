@@ -15,10 +15,10 @@ st.title("analysis")
 with st.sidebar:
     target_folder=st.selectbox(
     '対象のデータを含むフォルダ',
-    ['history'])
+    ['transactionhistory'])
     base_data_name=st.selectbox(
     '対象のデータ',
-    [f for f in os.listdir("history") if f.endswith(".csv")])
+    [f for f in os.listdir("data/transactionhistory") if f.endswith(".csv")])
 
     min_area = 0.0
     max_area = 150.0
@@ -39,7 +39,7 @@ with st.sidebar:
 #販売終了年月が空白のでーたは表示しないようにするか切り替えられるボタンがほしい
 hide_empty = st.checkbox("販売終了年月が空白のデータを表示しない", value=True)
 
-shows = pd.read_csv(f"{target_folder}/{base_data_name}",index_col=0)
+shows = pd.read_csv(f"data/{target_folder}/{base_data_name}",index_col=0)
 gb = GridOptionsBuilder.from_dataframe(shows)
 
 # ---

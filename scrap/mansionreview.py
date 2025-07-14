@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-from scrap import load_page
+from suumo import load_page
 from multiprocessing import Pool
 from tqdm import tqdm
 import pandas as pd
@@ -80,6 +80,6 @@ if __name__=="__main__":
     data["lons"]=lons
     data["lats"]=lats
 
-    data.to_csv(now.strftime("mansionreview/mansionreview_%Y%m%d.csv"))
+    data.to_csv(now.strftime("data/activelist/mansionreview_%Y%m%d.csv"))
 
 

@@ -5,7 +5,7 @@ import numpy as np
 from cmcrameri import cm
 
 # 元のデータフレームに追加します
-data=pd.read_csv("suumo_streamlit.csv",index_col=0)
+data=pd.read_csv("suumo_20250714.csv",index_col=0)
 
 colors = cm.hawaii_r(np.linspace(0, 1, 256))
 rgb_colors = (colors[:, :3] * 255).astype(int).tolist()
