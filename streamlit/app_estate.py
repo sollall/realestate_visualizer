@@ -32,6 +32,15 @@ dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
 # 絞り込み条件の設定
 # Sidebar for external website
 with st.sidebar:
+    mapstyle=st.selectbox(
+    '地図のスタイル',
+    [
+        'streets-v11',
+        'dark-v11',
+        'satellite-v9',
+        'navigation-night-v1',
+    ])
+
     min_area = dataframe['面積'].min()
     max_area = min(150.0,dataframe['面積'].max())
     price_range = st.slider(
@@ -79,7 +88,7 @@ view_state = pdk.ViewState(
 chart = pdk.Deck(
     layers=[layer],
     initial_view_state=view_state,
-    map_style="mapbox://styles/mapbox/streets-v11",
+    map_style=f"mapbox://styles/mapbox/{mapstyle}" ,
 )
 
 event = st.pydeck_chart(
