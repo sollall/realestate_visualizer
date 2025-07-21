@@ -35,7 +35,7 @@ deck = pdk.Deck(
             extruded=True,
             # wireframe=True,
             get_elevation="measuredHeight",
-            pickable=True,
+            #pickable=True,
             auto_highlight=True,
         )
         # pydeck.Layer(
