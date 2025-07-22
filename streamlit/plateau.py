@@ -53,18 +53,15 @@ building3d = pdk.Layer(
     auto_highlight=True,
 )
 
-# 港区AEDのデータ取得
-MINATO_AED_GEOJSON_URL = "https://opendata.city.minato.tokyo.jp/dataset/a67952bc-b318-4ab4-a797-187607c4ecf4/resource/3ccd1270-9ea7-481b-a97a-19ca80d22d05/download/minato_aed.json"
-data = requests.get(MINATO_AED_GEOJSON_URL)
-minato_aed_gdf = GeoDataFrame.from_features(data.json())
-
-# tooltip用に "name" 列を追加
-minato_aed_gdf["name"] = "AED"
+# scrapデータの処理
+dataframe["name"] = dataframe["建物名"]
+data = dataframe.to_dict(orient='records')
+st.session_state.candidates=pd.DataFrame(columns=dataframe.columns)
 
 layer = pdk.Layer(
     "ColumnLayer",
-    data=minato_aed_gdf,
-    get_position="geometry.coordinates",
+    data=data,
+    get_position="[lons, lats]",
     radius=4,
     get_elevation=400,
     get_fill_color=[255, 0, 0],
