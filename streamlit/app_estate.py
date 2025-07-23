@@ -3,31 +3,12 @@ import pydeck as pdk
 import pandas as pd
 import numpy as np
 
-from utils import sigmoid
+from utils import scale_color
 
 dataframe=pd.read_csv("data/activelist/mansionreview_20250714.csv",index_col=0)
 
-# Function to scale colors
-def scale_color(value, gain=0.01, offset=-400):
-    # Normalize the value to be between 0 and 1
-    normalized=sigmoid(value,gain=gain,offset_x=offset)
-    # Define a 7-color scale (e.g., from blue to red)
-    colors = [
-        [0, 0, 255, 160],   # Blue
-        [0, 128, 255, 160], # Light Blue
-        [0, 255, 255, 160], # Cyan
-        [255, 255, 0, 160], # Yellow
-        [255, 165, 0, 160], # Orange
-        [255, 69, 0, 160],  # Orange Red
-        [255, 0, 0, 160]    # Red
-    ]
-    # Map the normalized value to the corresponding color
-    index = int(normalized * (len(colors) - 1))
-    return colors[index]
-
 # Apply the function to create a color column
 dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
-
 
 # 絞り込み条件の設定
 # Sidebar for external website
