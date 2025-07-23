@@ -5,9 +5,13 @@ import pandas as pd
 from geopandas import GeoDataFrame
 import requests
 
+from utils import scale_color
+
 # 都市データ読み込み（例: 渋谷区）
 dataset = load_dataset("plateau-13113-shibuya-ku-2023")
 dataframe=pd.read_csv("data/activelist/mansionreview_20250714.csv",index_col=0)
+# Apply the function to create a color column
+dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
 
 # ユーザーが駅を選ぶ
 station = st.selectbox("駅を選んでください", ["渋谷駅", "代々木駅", "恵比寿駅"])
@@ -64,7 +68,7 @@ layer = pdk.Layer(
     get_position="[lons, lats]",
     radius=4,
     get_elevation=400,
-    get_fill_color=[255, 0, 0],
+    get_fill_color="color",
     pickable=True,  # ← 有効化
     auto_highlight=True,
 )
