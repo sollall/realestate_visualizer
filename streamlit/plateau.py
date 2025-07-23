@@ -8,16 +8,16 @@ import requests
 from utils import scale_color
 
 # 都市データ読み込み（例: 渋谷区）
-dataset = load_dataset("plateau-13113-shibuya-ku-2023")
+dataset = load_dataset("plateau-13106-taito-ku-2023")
 dataframe=pd.read_csv("data/activelist/mansionreview_20250714.csv",index_col=0)
 # Apply the function to create a color column
 dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
 
 # ユーザーが駅を選ぶ
-station = st.selectbox("駅を選んでください", ["渋谷駅", "代々木駅", "恵比寿駅"])
+station = st.selectbox("駅を選んでください", ["蔵前駅"])
 
 # plateauのlayerの定義　対象エリアを取得
-area = dataset.area_from_landmark(station)
+area = dataset.area_from_landmark(station,min_size=[3000, 3000])
 gdf = area.gdf.copy()
 usage_color_map = {
     "住宅": [135, 206, 250],         # 水色
