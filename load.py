@@ -1,7 +1,7 @@
 # extractとかtransformとかを一括でやる
 import sys
 from datetime import datetime
-from extract import mansionreview, suumo
+from extract import mansionreview, suumo, utils
 
 # サイト名と対応する関数をマッピング
 EXTRACT_FUNCTIONS = {
@@ -39,6 +39,12 @@ def main(site_name):
         raise ValueError(f"Data from {site_name} is invalid.")
     
     result.to_csv(now.strftime("data/rawdata/activelist/mansionreview_%Y%m%d.csv"))
+
+    lons,lats=utils.get_lat_lon(result["address"].values)
+    result["lons"]=lons
+    result["lats"]=lats
+
+    result.to_csv(now.strftime("data/analytics/activelist/mansionreview_%Y%m%d.csv"))
 
 if __name__ == "__main__":
     # コマンドライン引数からサイト名を取得
