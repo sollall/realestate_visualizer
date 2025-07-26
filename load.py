@@ -38,7 +38,7 @@ def main(site_name):
     else:
         raise ValueError(f"Data from {site_name} is invalid.")
     
-    result.to_csv(now.strftime("data/activelist/mansionreview_%Y%m%d.csv"))
+    result.to_csv(now.strftime("data/rawdata/activelist/mansionreview_%Y%m%d.csv"))
 
 if __name__ == "__main__":
     # コマンドライン引数からサイト名を取得
