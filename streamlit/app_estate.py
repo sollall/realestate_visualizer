@@ -5,7 +5,7 @@ import numpy as np
 
 from utils import scale_color
 
-dataframe=pd.read_csv("data/activelist/mansionreview_20250714.csv",index_col=0)
+dataframe=pd.read_csv("data/analytics/activelist/mansionreview_20250727.csv",index_col=0)
 
 # Apply the function to create a color column
 dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
@@ -22,16 +22,16 @@ with st.sidebar:
         'navigation-night-v1',
     ])
 
-    min_area = dataframe['面積'].min()
-    max_area = min(150.0,dataframe['面積'].max())
+    min_area = dataframe['area'].min()
+    max_area = min(150.0,dataframe['area'].max())
     price_range = st.slider(
         '面積の指定',
         min_area, max_area, (min_area, max_area),
         step=1.0
     )
 
-    min_age_years = max(0.0,dataframe['築年数'].min())
-    max_age_years = min(60.0,dataframe['築年数'].max())
+    min_age_years = max(0.0,dataframe['age'].min())
+    max_age_years = min(60.0,dataframe['age'].max())
     age_years_range = st.slider(
         '築年数の指定',
         min_age_years, max_age_years, (min_age_years, max_age_years),
@@ -40,8 +40,8 @@ with st.sidebar:
 
 #条件に合わせたデータ絞り込み
 #セッションステートにしているのは逐次追加したかった時の名残
-dataframe=dataframe[(dataframe['面積']>=price_range[0]) & (dataframe['面積']<=price_range[1])]
-dataframe=dataframe[(dataframe['築年数']>=age_years_range[0]) & (dataframe['築年数']<=age_years_range[1])]
+dataframe=dataframe[(dataframe['area']>=price_range[0]) & (dataframe['area']<=price_range[1])]
+dataframe=dataframe[(dataframe['age']>=age_years_range[0]) & (dataframe['age']<=age_years_range[1])]
 data = dataframe.to_dict(orient='records')
 st.session_state.candidates=pd.DataFrame(columns=dataframe.columns)
 
@@ -82,8 +82,8 @@ selected=event.selection
 
 if "map" in selected["indices"]:
     selected_index=selected["indices"]["map"][0]
-    selected_address=dataframe.iloc[selected_index]["住所"]
-    st.session_state.candidates=pd.concat([st.session_state.candidates, dataframe[dataframe["住所"]==selected_address]])
+    selected_address=dataframe.iloc[selected_index]["address"]
+    st.session_state.candidates=pd.concat([st.session_state.candidates, dataframe[dataframe["address"]==selected_address]])
     st.dataframe(st.session_state.candidates)
 
 
