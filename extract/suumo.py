@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from multiprocessing import Pool
 from tqdm import tqdm
 
-from .utils import load_page,get_lat_lon
+from .utils import load_page
 
 # 面積を抽出する関数
 def extract_area(text):

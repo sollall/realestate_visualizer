@@ -1,12 +1,20 @@
 # extractとかtransformとかを一括でやる
 import sys
 from datetime import datetime
-from extract import mansionreview, suumo, utils
+import extract.mansionreview as extract_mansionreview
+import extract.suumo as extract_suumo
+
+import transform.mansionreview as transform_mansionreview
+import transform.suumo as transform_suumo
 
 # サイト名と対応する関数をマッピング
 EXTRACT_FUNCTIONS = {
-    "mansionreview": mansionreview.scrap_estate_data,
-    "suumo": suumo.get_estate_data,
+    "mansionreview": extract_mansionreview.scrap_estate_data,
+    "suumo": extract_suumo.get_estate_data,
+}
+
+TRANSFORM_FUNCTIONS = {
+    "mansionreview": transform_mansionreview.transform,
 }
 
 def validate_data(data):
@@ -40,11 +48,12 @@ def main(site_name):
     
     result.to_csv(now.strftime("data/rawdata/activelist/mansionreview_%Y%m%d.csv"))
 
-    lons,lats=utils.get_lat_lon(result["address"].values)
-    result["lons"]=lons
-    result["lats"]=lats
+    if site_name in TRANSFORM_FUNCTIONS:
+        transformed = TRANSFORM_FUNCTIONS[site_name](result)
+    else:
+        raise ValueError(f"TransformError: Unknown site '{site_name}'. Available sites: {list(TRANSFORM_FUNCTIONS.keys())}")
 
-    result.to_csv(now.strftime("data/analytics/activelist/mansionreview_%Y%m%d.csv"))
+    transformed.to_csv(now.strftime("data/analytics/activelist/mansionreview_%Y%m%d.csv"))
 
 if __name__ == "__main__":
     # コマンドライン引数からサイト名を取得
