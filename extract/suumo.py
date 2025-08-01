@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from multiprocessing import Pool
 from tqdm import tqdm
 
-from utils import load_page,get_lat_lon
+from .utils import load_page
 
 # 面積を抽出する関数
 def extract_area(text):
@@ -89,7 +89,7 @@ def read_page(page_url):
 
     return results
 
-def get_estate_data_suumo():
+def get_estate_data():
     # SUUMOを東京都23区のみ指定して検索して出力した画面のurl(ページ数フォーマットが必要)
     url = "https://suumo.jp/jj/bukken/ichiran/JJ010FJ001/?ar=030&bs=011&ta=13&jspIdFlg=patternShikugun&sc=13101&sc=13102&sc=13103&sc=13104&sc=13105&sc=13113&sc=13106&sc=13107&sc=13108&sc=13118&sc=13121&sc=13122&sc=13123&sc=13109&sc=13110&sc=13111&sc=13112&sc=13114&sc=13115&sc=13120&sc=13116&sc=13117&sc=13119&kb=1&kt=9999999&mb=0&mt=9999999&ekTjCd=&ekTjNm=&tj=0&cnb=0&cn=9999999&srch_navi={{2}}&page={}"
     html = load_page(url.format(1))#1ページ目を取得してページ数を取得
@@ -103,11 +103,11 @@ def get_estate_data_suumo():
                 results_all.extend(result)
                 pbar.update(1)
 
-    return pd.DataFrame(results_all,columns=["name","price","address","area","age_years","age_months"])
+    return pd.DataFrame(results_all,columns=["name","price","address","area","age","age_months"])
 
 if __name__=="__main__":
     now = datetime.now()
-    data=get_estate_data_suumo()
+    data=get_estate_data()
 
     data["price per unit area"]=data["price"]/data["area"]*3.30578
     lons,lats=get_lat_lon(data["address"].values)

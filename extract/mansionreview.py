@@ -1,12 +1,11 @@
 from bs4 import BeautifulSoup
-from suumo import load_page
 from multiprocessing import Pool
 from tqdm import tqdm
 import pandas as pd
 import re
 from datetime import datetime
 
-from utils import get_lat_lon
+from .utils import load_page
 
 def scrap_from_search(url):
     
@@ -49,7 +48,7 @@ def scrap_from_search(url):
     return bukken_results
 
 
-def get_estate_data_mansionreview():
+def scrap_estate_data():
     WARD_NUM=23
 
     results_all=[]
@@ -68,13 +67,15 @@ def get_estate_data_mansionreview():
                     results_all.extend(result)
                     pbar.update(1)        
         
-        df_columns=["建物名","値段","住所","築年数","面積","坪単価","部屋のタイプ","階数","向き","割安額","n階建て","戸数"]
+        #["name","price","address","area","age"]が必須?
+        df_columns=["name","price","address","age","area","坪単価","部屋のタイプ","階数","向き","割安額","n階建て","戸数"]
+        
 
     return pd.DataFrame(results_all,columns=df_columns)
 
 if __name__=="__main__":
     now = datetime.now()
-    data=get_estate_data_mansionreview()
+    data=scrap_estate_data()
 
     lons,lats=get_lat_lon(data["住所"].values)
     data["lons"]=lons

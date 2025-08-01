@@ -2,9 +2,6 @@
 import numpy as np
 from retry import retry
 import requests
-import multiprocessing
-from multiprocessing import Pool
-from tqdm import tqdm
 import urllib
 import pandas as pd
 
@@ -23,20 +20,6 @@ def search_address(address):
     response=load_page(makeUrl + s_quote)
     lon,lat=response.json()[0]["geometry"]["coordinates"]
     return lon,lat
-
-def get_lat_lon(addresses):
-
-    LEN_ADDRESSES=len(addresses)
-    lons=[]
-    lats=[]
-    with Pool(processes=multiprocessing.cpu_count()) as pool:
-        with tqdm(total=LEN_ADDRESSES) as pbar:
-            for result in pool.imap(search_address, addresses):
-                lons.append(result[0])
-                lats.append(result[1])
-                pbar.update(1)
-    
-    return lons,lats
 
 def get_diff_records(today,yesterday):
     diff=pd.merge(today,yesterday, on=["建物名","面積"], how ="outer", indicator=True).query(f'_merge != "both"')
