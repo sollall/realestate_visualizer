@@ -85,12 +85,3 @@ if "map" in selected["indices"]:
     selected_address=dataframe.iloc[selected_index]["address"]
     st.session_state.candidates=pd.concat([st.session_state.candidates, dataframe[dataframe["address"]==selected_address]])
     st.dataframe(st.session_state.candidates)
-
-
-st.markdown("### External Website")
-st.markdown(
-    """
-    <iframe src="https://www.example.com" width="100%" height="500"></iframe>
-    """,
-    unsafe_allow_html=True
-)
