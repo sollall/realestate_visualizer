@@ -9,7 +9,7 @@ from utils import scale_color
 
 # 都市データ読み込み（例: 渋谷区）
 dataset = load_dataset("plateau-13106-taito-ku-2023")
-dataframe=pd.read_csv("data/activelist/mansionreview_20250714.csv",index_col=0)
+dataframe=pd.read_csv("data/analytics/activelist/mansionreview_20250727.csv",index_col=0)
 # Apply the function to create a color column
 dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
 
@@ -58,7 +58,6 @@ building3d = pdk.Layer(
 )
 
 # scrapデータの処理
-dataframe["name"] = dataframe["建物名"]
 data = dataframe.to_dict(orient='records')
 st.session_state.candidates=pd.DataFrame(columns=dataframe.columns)
 
