@@ -1,15 +1,23 @@
+# セットアップ
+
+依存関係の管理には [uv](https://docs.astral.sh/uv/) を使用しています。
+
+```
+uv sync
+```
+
 # データの取得
 ```
-python scrap.py
-python mansionreview.py
+uv run python scrap.py
+uv run python mansionreview.py
 ```
 ※動作確認してない
 
 # appの起動
 
 ```
-streamlit run app_estate.py
-streamlit run analytics.py
+uv run streamlit run app_estate.py
+uv run streamlit run analytics.py
 ```
 
 リポジトリ構造を考える
