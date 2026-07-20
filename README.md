@@ -16,10 +16,10 @@ uv run python mansionreview.py
 # appの起動
 
 ```
-uv run streamlit run streamlit/Home.py
+uv run streamlit run Home.py
 ```
 
-`streamlit/Home.py` がメイン画面で、`streamlit/pages/` 配下の各ページ(analytics, app_estate, plateau, price3d)がサイドバーから選択できます。
+`Home.py` がメイン画面で、`pages/` 配下の各ページ(analytics, app_estate, plateau, price3d)がサイドバーから選択できます。
 
 リポジトリ構造を考える
 - scrap
