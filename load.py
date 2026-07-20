@@ -15,6 +15,7 @@ EXTRACT_FUNCTIONS = {
 
 TRANSFORM_FUNCTIONS = {
     "mansionreview": transform_mansionreview.transform,
+    "suumo": transform_suumo.transform,
 }
 
 def validate_data(data):
@@ -46,14 +47,14 @@ def main(site_name):
     else:
         raise ValueError(f"Data from {site_name} is invalid.")
     
-    result.to_csv(now.strftime("data/rawdata/activelist/mansionreview_%Y%m%d.csv"))
+    result.to_csv(now.strftime(f"data/rawdata/activelist/{site_name}_%Y%m%d.csv"))
 
     if site_name in TRANSFORM_FUNCTIONS:
         transformed = TRANSFORM_FUNCTIONS[site_name](result)
     else:
         raise ValueError(f"TransformError: Unknown site '{site_name}'. Available sites: {list(TRANSFORM_FUNCTIONS.keys())}")
 
-    transformed.to_csv(now.strftime("data/analytics/activelist/mansionreview_%Y%m%d.csv"))
+    transformed.to_csv(now.strftime(f"data/analytics/activelist/{site_name}_%Y%m%d.csv"))
 
 if __name__ == "__main__":
     # コマンドライン引数からサイト名を取得
