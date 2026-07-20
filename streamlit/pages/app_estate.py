@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pydeck as pdk
 import pandas as pd
@@ -5,14 +6,15 @@ import numpy as np
 
 from utils import scale_color
 
-dataframe=pd.read_csv("data/analytics/activelist/mansionreview_20250727.csv",index_col=0)
-
-# Apply the function to create a color column
-dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
+target_folder = "activelist"
 
 # 絞り込み条件の設定
 # Sidebar for external website
 with st.sidebar:
+    base_data_name=st.selectbox(
+    '対象のデータ',
+    [f for f in os.listdir(f"data/analytics/{target_folder}") if f.endswith(".csv")])
+
     mapstyle=st.selectbox(
     '地図のスタイル',
     [
@@ -22,6 +24,12 @@ with st.sidebar:
         'navigation-night-v1',
     ])
 
+dataframe=pd.read_csv(f"data/analytics/{target_folder}/{base_data_name}",index_col=0)
+
+# Apply the function to create a color column
+dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
+
+with st.sidebar:
     min_area = dataframe['area'].min()
     max_area = min(150.0,dataframe['area'].max())
     price_range = st.slider(
