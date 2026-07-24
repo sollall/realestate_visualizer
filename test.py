@@ -1,27 +1,30 @@
-from load import validate_data
+import pandas as pd
 
-def test_validate_data():
+from pipeline import SuumoPipeline
+
+
+def test_validate():
+    pipeline = SuumoPipeline()
+
     # 正常なデータ
-    valid_data = {
-        "name": "Test Mansion",
-        "price": 50000000,
-        "address": "Tokyo, Japan",
-        "area": 100.0,
-        "age": 5,
-        "age_months": 6
-    }
-    
+    valid_data = pd.DataFrame({
+        "address": ["Tokyo, Japan"],
+        "area": [100.0],
+        "age": [5],
+        "lons": [139.7],
+        "lats": [35.6],
+        "坪単価": [300.0],
+    })
+
     # 不正なデータ（カラムが不足）
-    invalid_data = {
-        "name": "Test Mansion",
-        "price": 50000000,
-        "address": "Tokyo, Japan",
-        "area": 100.0
-    }
-    
-    assert validate_data(valid_data) == True, "Valid data should return True"
-    assert validate_data(invalid_data) == False, "Invalid data should return False"
+    invalid_data = pd.DataFrame({
+        "address": ["Tokyo, Japan"],
+        "area": [100.0],
+    })
+
+    assert pipeline.validate(valid_data) == True, "Valid data should return True"
+    assert pipeline.validate(invalid_data) == False, "Invalid data should return False"
 
 if __name__ == "__main__":
-    test_validate_data()
+    test_validate()
     print("All tests passed.")

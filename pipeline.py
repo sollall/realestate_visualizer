@@ -1,5 +1,10 @@
 from abc import ABC, abstractmethod
 
+import extract.mansionreview as extract_mansionreview
+import extract.suumo as extract_suumo
+import transform.mansionreview as transform_mansionreview
+import transform.suumo as transform_suumo
+
 
 class Pipeline(ABC):
     """extract/transformを行うパイプラインの基底クラス"""
@@ -27,3 +32,29 @@ class Pipeline(ABC):
             return False
 
         return True
+
+
+class SuumoPipeline(Pipeline):
+    """SUUMOのextract/transformを行うパイプライン"""
+
+    def extract(self):
+        return extract_suumo.get_estate_data()
+
+    def transform(self, data):
+        return transform_suumo.transform(data)
+
+
+class MansionReviewPipeline(Pipeline):
+    """マンションレビューのextract/transformを行うパイプライン"""
+
+    def extract(self):
+        return extract_mansionreview.scrap_estate_data()
+
+    def transform(self, data):
+        return transform_mansionreview.transform(data)
+
+
+PIPELINES = {
+    "suumo": SuumoPipeline,
+    "mansionreview": MansionReviewPipeline,
+}
