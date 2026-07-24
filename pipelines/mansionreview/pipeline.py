@@ -1,7 +1,7 @@
-from extract.mansionreview import scrap_estate_data
-from transform.mansionreview import transform
+from .extract import scrap_estate_data
+from .transform import transform
 
-from .core.pipeline import Pipeline
+from ..core.pipeline import Pipeline
 
 
 class MansionReviewPipeline(Pipeline):

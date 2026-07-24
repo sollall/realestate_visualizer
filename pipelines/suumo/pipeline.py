@@ -1,7 +1,7 @@
-from extract.suumo import get_estate_data
-from transform.suumo import transform
+from .extract import get_estate_data
+from .transform import transform
 
-from .core.pipeline import Pipeline
+from ..core.pipeline import Pipeline
 
 
 class SuumoPipeline(Pipeline):

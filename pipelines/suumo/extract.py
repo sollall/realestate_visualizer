@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from multiprocessing import Pool
 from tqdm import tqdm
 
-from .utils import load_page
+from ..core.utils import load_page
 
 # 面積を抽出する関数
 def extract_area(text):
@@ -39,7 +39,7 @@ def calculate_age(built_date):
         built_month = int(match.group(2))
     else:
         return None,None
-    
+
     # 築年数を計算
     age_years = current_year - built_year
     age_months = current_month - built_month
@@ -60,13 +60,13 @@ def read_page(page_url):
     estates = estates_groups.find_all('div', class_='property_unit')
 
     results=[]
-    
+
     for estate in estates:
         estate_info=estate.find_all('div', class_='dottable-line')
 
         name_text=estate_info[0].find_all("dd")[0].text
         name=extract_name(name_text)
-        
+
         price_text=estate_info[1].find_all("dd")[0].text
         price=extract_price(price_text)
 
@@ -74,7 +74,7 @@ def read_page(page_url):
 
         area_text=estate_info[3].find_all("dd")[0].text
         area=extract_area(area_text)
-        
+
         built_date=estate_info[4].find_all("dd")[1].text
         age_years,age_months=calculate_age(built_date)
 
@@ -104,17 +104,3 @@ def get_estate_data():
                 pbar.update(1)
 
     return pd.DataFrame(results_all,columns=["name","price","address","area","age","age_months"])
-
-if __name__=="__main__":
-    now = datetime.now()
-    data=get_estate_data()
-
-    data["price per unit area"]=data["price"]/data["area"]*3.30578
-    lons,lats=get_lat_lon(data["address"].values)
-    data["lons"]=lons
-    data["lats"]=lats
-
-    data.to_csv(now.strftime("data/activelist/suumo_%Y%m%d.csv"))
-
-    
-
