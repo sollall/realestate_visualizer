@@ -1,6 +1,9 @@
-from load import validate_data
+from pipelines.suumo import SuumoPipeline
 
-def test_validate_data():
+
+def test_validate_raw():
+    pipeline = SuumoPipeline()
+
     # 正常なデータ
     valid_data = {
         "name": "Test Mansion",
@@ -10,7 +13,7 @@ def test_validate_data():
         "age": 5,
         "age_months": 6
     }
-    
+
     # 不正なデータ（カラムが不足）
     invalid_data = {
         "name": "Test Mansion",
@@ -18,10 +21,10 @@ def test_validate_data():
         "address": "Tokyo, Japan",
         "area": 100.0
     }
-    
-    assert validate_data(valid_data) == True, "Valid data should return True"
-    assert validate_data(invalid_data) == False, "Invalid data should return False"
+
+    assert pipeline.validate_raw(valid_data) == True, "Valid data should return True"
+    assert pipeline.validate_raw(invalid_data) == False, "Invalid data should return False"
 
 if __name__ == "__main__":
-    test_validate_data()
+    test_validate_raw()
     print("All tests passed.")

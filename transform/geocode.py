@@ -1,7 +1,10 @@
+"""生データの住所を緯度経度に変換する(extractのgeocoding IFを使う生データ加工処理)。"""
+
 import multiprocessing
 from multiprocessing import Pool
 from tqdm import tqdm
 from extract.utils import search_address
+
 
 def get_lat_lon(addresses):
 

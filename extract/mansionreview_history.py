@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium import webdriver
-from utils import load_page
+from .utils import load_page
 import multiprocessing
 from multiprocessing import Pool
 from queue import Queue
