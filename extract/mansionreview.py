@@ -46,11 +46,14 @@ def scrap_from_search(url):
 
         for room_info in rooms_info:
             infos=[info.text for info in room_info.find_all("td")]
-            
-            if len(infos)!=9:
+
+            # 「全件を表示する」ボタン行(1列)や未登録会員向けモザイク行(6列)など、
+            # 価格〜価格評価の9列が揃っていない行はデータを持たないのでスキップする。
+            # 末尾に「情報取得日」等の列が追加されていても、先頭9列は変わらず使える。
+            if len(infos)<9:
                 continue
-            
-            _,_,price,unit_price,area,room_type,num_floor,dire,eva=infos
+
+            _,_,price,unit_price,area,room_type,num_floor,dire,eva=infos[:9]
         
             bukken_results.append([
                 building_name,
