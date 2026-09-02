@@ -7,11 +7,15 @@ uv sync
 ```
 
 # データの取得
+
+`load.py`にサイト名を指定して実行すると、該当サイトの`extract`→`transform`が実行され、
+`data/rawdata/`に生データ、`data/analytics/`に分析用データがCSVで保存されます。
+対応サイト名は`pipelines/registry.py`の`PIPELINES`を参照してください。
+
 ```
-uv run python scrap.py
-uv run python mansionreview.py
+uv run python load.py suumo
+uv run python load.py mansionreview
 ```
-※動作確認してない
 
 # appの起動
 
