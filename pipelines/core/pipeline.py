@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+import pandas as pd
+
 from analysis.schema import REQUIRED_COLUMNS
 
 # extract直後の生データに最低限必要なカラム(サイトによらず共通)
@@ -23,8 +25,23 @@ class Pipeline(ABC):
         raise NotImplementedError
 
     def validate_raw(self, data):
-        """extract直後の生データが最低限の形になっているか検証する"""
-        return all(col in data for col in RAW_REQUIRED_COLUMNS)
+        """extract直後の生データが最低限の形になっているか検証する
+
+        カラムが揃っているかだけでなく、スクレイピング先のHTML構造の変化などで
+        0件になっていないか・必須カラムがnull埋めされていないかも確認する。
+        これによりextractが「エラーは出ないが中身が壊れている」状態を検知できる。
+        """
+        if not all(col in data for col in RAW_REQUIRED_COLUMNS):
+            return False
+
+        if isinstance(data, pd.DataFrame):
+            if data.empty:
+                return False
+
+            if data[RAW_REQUIRED_COLUMNS].isnull().any().any():
+                return False
+
+        return True
 
     def validate(self, data):
         """transform後のdfがanalysis.schemaの要件を満たしているか検証する"""
