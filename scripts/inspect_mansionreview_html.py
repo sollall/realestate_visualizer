@@ -93,6 +93,28 @@ def main():
         marker = "" if count == 9 else "  <- 想定(9)と不一致。この行は今スキップされています"
         print(f"    td数={count}: {freq}行{marker}")
 
+    print("\n=== recommendTableのヘッダー行・td数パターンごとのサンプル行(実データ) ===")
+    print("(td数が9でなかった場合、ここでどの列が増減したか実際のテキストで確認する)")
+    header_printed = False
+    samples = {}
+    for bukken in soup.find_all("li", class_="property-detail-list-item"):
+        tables = bukken.find_all("table", class_="recommendTable")
+        if not tables:
+            continue
+        rows = tables[0].find_all("tr")
+        if not header_printed and rows:
+            header_cells = rows[0].find_all(["th", "td"])
+            print(f"  ヘッダー行: {[c.get_text(strip=True) for c in header_cells]}")
+            header_printed = True
+        for tr in rows[1:]:
+            tds = tr.find_all("td")
+            count = len(tds)
+            samples.setdefault(count, []).append([td.get_text(strip=True) for td in tds])
+    for count in sorted(samples):
+        print(f"  td数={count} のサンプル(最大2件):")
+        for sample in samples[count][:2]:
+            print(f"    {sample}")
+
     print("\n=== ページ内に存在するclass名の一覧(出現回数上位50件) ===")
     print("(上のNGと似た名前があれば、それがリネーム後の候補です)")
     class_counter = Counter()
