@@ -1,5 +1,4 @@
 # tut_6.py
-import os
 import pandas as pd
 import streamlit as st
 from st_aggrid import AgGrid
@@ -7,7 +6,9 @@ from st_aggrid.grid_options_builder import GridOptionsBuilder
 #add
 from st_aggrid.shared import GridUpdateMode
 
-st.set_page_config(page_title="過去の取引履歴", layout="wide") 
+from analysis.loader import list_csv_files, load_csv
+
+st.set_page_config(page_title="過去の取引履歴", layout="wide")
 st.title("analysis")
 
 # 絞り込み条件の設定
@@ -18,7 +19,7 @@ with st.sidebar:
     ['transactionhistory'])
     base_data_name=st.selectbox(
     '対象のデータ',
-    [f for f in os.listdir(f"data/analytics/{target_folder}") if f.endswith(".csv")])
+    list_csv_files(target_folder))
 
     min_area = 0.0
     max_area = 150.0
@@ -39,7 +40,7 @@ with st.sidebar:
 #販売終了年月が空白のでーたは表示しないようにするか切り替えられるボタンがほしい
 hide_empty = st.checkbox("販売終了年月が空白のデータを表示しない", value=True)
 
-shows = pd.read_csv(f"data/analytics/{target_folder}/{base_data_name}",index_col=0)
+shows = load_csv(target_folder, base_data_name)
 gb = GridOptionsBuilder.from_dataframe(shows)
 
 # ---

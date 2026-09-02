@@ -1,10 +1,11 @@
-import os
 import streamlit as st
 import pydeck as pdk
 import pandas as pd
 import numpy as np
 
-from utils import scale_color
+from analysis.colors import scale_color
+from analysis.filters import filter_range
+from analysis.loader import list_csv_files, load_csv
 
 target_folder = "activelist"
 
@@ -13,7 +14,7 @@ target_folder = "activelist"
 with st.sidebar:
     base_data_name=st.selectbox(
     '対象のデータ',
-    [f for f in os.listdir(f"data/analytics/{target_folder}") if f.endswith(".csv")])
+    list_csv_files(target_folder))
 
     mapstyle=st.selectbox(
     '地図のスタイル',
@@ -24,22 +25,23 @@ with st.sidebar:
         'navigation-night-v1',
     ])
 
-dataframe=pd.read_csv(f"data/analytics/{target_folder}/{base_data_name}",index_col=0)
+dataframe=load_csv(target_folder, base_data_name)
 
 # Apply the function to create a color column
 dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
 
 with st.sidebar:
-    min_area = dataframe['area'].min()
-    max_area = min(150.0,dataframe['area'].max())
+    min_area = float(dataframe['area'].min())
+    max_area = min(150.0,float(dataframe['area'].max()))
     price_range = st.slider(
         '面積の指定',
         min_area, max_area, (min_area, max_area),
         step=1.0
     )
 
-    min_age_years = max(0.0,dataframe['age'].min())
-    max_age_years = min(60.0,dataframe['age'].max())
+    # サイトによってageの型(int/float)が異なるため明示的にfloat化する
+    min_age_years = max(0.0,float(dataframe['age'].min()))
+    max_age_years = min(60.0,float(dataframe['age'].max()))
     age_years_range = st.slider(
         '築年数の指定',
         min_age_years, max_age_years, (min_age_years, max_age_years),
@@ -48,8 +50,8 @@ with st.sidebar:
 
 #条件に合わせたデータ絞り込み
 #セッションステートにしているのは逐次追加したかった時の名残
-dataframe=dataframe[(dataframe['area']>=price_range[0]) & (dataframe['area']<=price_range[1])]
-dataframe=dataframe[(dataframe['age']>=age_years_range[0]) & (dataframe['age']<=age_years_range[1])]
+dataframe=filter_range(dataframe, 'area', price_range)
+dataframe=filter_range(dataframe, 'age', age_years_range)
 data = dataframe.to_dict(orient='records')
 st.session_state.candidates=pd.DataFrame(columns=dataframe.columns)
 
