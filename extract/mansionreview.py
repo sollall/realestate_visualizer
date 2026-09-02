@@ -7,21 +7,43 @@ from datetime import datetime
 
 from .utils import load_page
 
+
+class MansionReviewScrapeError(Exception):
+    """mansion-review.jpのHTML構造が想定と異なり、スクレイピングを継続できない場合に送出する"""
+
+
+def _find_required(parent, name, url, **kwargs):
+    """要素が見つからない場合、どのタグ・クラスがどのURLで見つからなかったかを明示して例外を送出する"""
+    element = parent.find(name, **kwargs)
+    if element is None:
+        attrs = ", ".join(f"{k}={v!r}" for k, v in kwargs.items())
+        raise MansionReviewScrapeError(
+            f"要素が見つかりません(tag={name}, {attrs}) url={url}\n"
+            "mansion-review.jpのHTML構造が変更された可能性があります。"
+        )
+    return element
+
+
 def scrap_from_search(url):
-    
+
     html = load_page(url)
     soup = BeautifulSoup(html.content, 'html.parser')
 
     bukken_list=[bukken for bukken in soup.find_all("li",class_="property-detail-list-item")]
+    if not bukken_list:
+        raise MansionReviewScrapeError(
+            f"物件一覧(property-detail-list-item)が0件でした url={url}\n"
+            "mansion-review.jpのHTML構造が変更された可能性があります。"
+        )
     bukken_results=[]
 
     for bukken in bukken_list:
-        building_name=bukken.find("h2",class_="property-detail-content__head-title").text
-        address,_,construction_date,floor_max_min,num_rooms=[cell.get_text(strip=True) for cell in bukken.find("table",class_="property-detail-content_main").find_all("td")]
-        _,_,_,_,_,_=[cell.get_text(strip=True) for cell in bukken.find("table",class_="property-detail-content_sub").find_all("td")]
+        building_name=_find_required(bukken,"h2",url,class_="property-detail-content__head-title").text
+        address,_,construction_date,floor_max_min,num_rooms=[cell.get_text(strip=True) for cell in _find_required(bukken,"table",url,class_="property-detail-content_main").find_all("td")]
+        _,_,_,_,_,_=[cell.get_text(strip=True) for cell in _find_required(bukken,"table",url,class_="property-detail-content_sub").find_all("td")]
 
-        rooms_info=[cell for cell in bukken.find("table",class_="recommendTable").find_all("tr")][1:]
-    
+        rooms_info=[cell for cell in _find_required(bukken,"table",url,class_="recommendTable").find_all("tr")][1:]
+
         for room_info in rooms_info:
             infos=[info.text for info in room_info.find_all("td")]
             
@@ -57,7 +79,13 @@ def scrap_estate_data():
         html = load_page(origin_url)
         soup = BeautifulSoup(html.content, 'html.parser')
 
-        MAX_PAGES=int(soup.find_all("li",class_="c-pagination-list__item")[-1].text.strip())
+        pagination_items=soup.find_all("li",class_="c-pagination-list__item")
+        if not pagination_items:
+            raise MansionReviewScrapeError(
+                f"ページネーション要素(c-pagination-list__item)が見つかりません url={origin_url}\n"
+                "mansion-review.jpのHTML構造が変更された可能性があります。"
+            )
+        MAX_PAGES=int(pagination_items[-1].text.strip())
 
         url="https://www.mansion-review.jp/mansion/city/{}_{}.html"
         
