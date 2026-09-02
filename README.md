@@ -25,6 +25,16 @@ uv run streamlit run Home.py
 
 `Home.py` がメイン画面で、`pages/` 配下の各ページ(analytics, app_estate, plateau, price3d)がサイドバーから選択できます。
 
+# テスト
+
+```
+uv run pytest
+```
+
+`load.py`は実サイトへスクレイピングを行うため、CI/自動テストでは実サイトを叩く代わりに
+`tests/test_load.py`でダミーのPipelineに差し替えて`extract`→検証→保存→`transform`→保存の
+一連の流れが正しく動くことを確認しています。push/PR時に`.github/workflows/ci.yml`で自動実行されます。
+
 # リポジトリ構造
 
 データの取得・加工(IF+生データ加工)と、可視化・分析(streamlit)を疎結合にする方針で構成しています。
