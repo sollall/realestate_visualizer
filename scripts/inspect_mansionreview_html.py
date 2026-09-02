@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from bs4 import BeautifulSoup
 
+import extract.mansionreview as mansionreview
 from extract.utils import load_page
 
 # extract/mansionreview.py が依存しているセレクタ一覧
@@ -58,6 +59,39 @@ def main():
         found = soup.find_all(tag, class_=class_name)
         status = "OK" if found else "NG (見つかりません)"
         print(f'  <{tag} class="{class_name}"> -> {len(found)}件  [{status}]')
+
+    print("\n=== extract.mansionreview.scrap_from_search()を実際に呼び出した結果 ===")
+    try:
+        results = mansionreview.scrap_from_search(args.url)
+        print(f"  parsed rows: {len(results)}")
+        if results:
+            print(f"  first row: {results[0]}")
+        else:
+            print("  0件でした。セレクタ自体はOKなので、行のtd数不一致など下の詳細チェックを確認してください。")
+    except mansionreview.MansionReviewScrapeError as e:
+        print(f"  MansionReviewScrapeError: {e}")
+    except Exception as e:
+        import traceback
+        print(f"  ERROR: {type(e).__name__}: {e}")
+        traceback.print_exc()
+
+    print("\n=== recommendTableの構造チェック(1物件あたりの個数・行のtd数) ===")
+    print("(scrap_from_searchは1物件目に見つかったrecommendTableだけを使い、各行のtd数が9でないと")
+    print(" その行を無言でスキップします。9件でない行が多い場合はここが0件の原因です)")
+    tables_per_bukken_counter = Counter()
+    td_count_counter = Counter()
+    for bukken in soup.find_all("li", class_="property-detail-list-item"):
+        tables = bukken.find_all("table", class_="recommendTable")
+        tables_per_bukken_counter[len(tables)] += 1
+        if not tables:
+            continue
+        for tr in tables[0].find_all("tr")[1:]:
+            td_count_counter[len(tr.find_all("td"))] += 1
+    print(f"  1物件あたりのrecommendTable数の分布: {dict(sorted(tables_per_bukken_counter.items()))}")
+    print("  1つ目のrecommendTable内の各行のtd数の分布:")
+    for count, freq in sorted(td_count_counter.items()):
+        marker = "" if count == 9 else "  <- 想定(9)と不一致。この行は今スキップされています"
+        print(f"    td数={count}: {freq}行{marker}")
 
     print("\n=== ページ内に存在するclass名の一覧(出現回数上位50件) ===")
     print("(上のNGと似た名前があれば、それがリネーム後の候補です)")
