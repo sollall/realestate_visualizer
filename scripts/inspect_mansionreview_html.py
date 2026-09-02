@@ -11,7 +11,13 @@ extract/mansionreview.py が依存しているセレクタが今も有効かど�
 """
 
 import argparse
+import sys
 from collections import Counter
+from pathlib import Path
+
+# scripts/配下から直接実行された場合でもリポジトリルート直下のextractパッケージを
+# importできるよう、リポジトリルートをsys.pathへ明示的に追加する。
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from bs4 import BeautifulSoup
 
