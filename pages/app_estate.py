@@ -19,10 +19,11 @@ with st.sidebar:
     mapstyle=st.selectbox(
     '地図のスタイル',
     [
-        'streets-v11',
-        'dark-v11',
-        'satellite-v9',
-        'navigation-night-v1',
+        'road',
+        'dark',
+        'light',
+        'dark_no_labels',
+        'light_no_labels',
     ])
 
 dataframe=load_csv(target_folder, base_data_name)
@@ -79,7 +80,7 @@ view_state = pdk.ViewState(
 chart = pdk.Deck(
     layers=[layer],
     initial_view_state=view_state,
-    map_style=f"mapbox://styles/mapbox/{mapstyle}" ,
+    map_style=mapstyle,
 )
 
 event = st.pydeck_chart(
