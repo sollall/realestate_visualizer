@@ -119,6 +119,43 @@ def test_scrap_from_search_skips_non_data_rows_and_uses_leading_9_columns(monkey
     assert eva == 0
 
 
+UNRESOLVED_VALUE_BUKKEN_HTML = """
+<li class="property-detail-list-item">
+  <h2 class="property-detail-content__head-title">テストマンション</h2>
+  <table class="property-detail-content_main">
+    <tr><td>東京都テスト区1-1-1</td><td>x</td><td>1990年3月</td><td>10階建</td><td>50戸</td></tr>
+  </table>
+  <table class="property-detail-content_sub">
+    <tr><td>a</td><td>b</td><td>c</td><td>d</td><td>e</td><td>f</td></tr>
+  </table>
+  <table class="recommendTable">
+    <tr><th>header</th></tr>
+    <tr>
+      <td></td><td>面積未定テストマンション</td><td>3000万円</td><td>-</td>
+      <td>-</td><td>3LDK</td><td>5階</td><td>南</td><td>相応</td>
+      <td>情報取得日:2026年09月01日</td>
+    </tr>
+    <tr>
+      <td></td><td>通常テストマンション</td><td>4000万円</td><td>150万円</td>
+      <td>80.00m&#178;</td><td>3LDK</td><td>8階</td><td>西</td><td>相応</td>
+      <td>情報取得日:2026年09月01日</td>
+    </tr>
+  </table>
+</li>
+"""
+
+
+def test_scrap_from_search_skips_rows_with_unresolved_numeric_values(monkeypatch):
+    """価格・面積が"-"など未確定の物件はクラッシュさせずスキップし、他の正常な行は処理されること"""
+    monkeypatch.setattr(mansionreview, "load_page", lambda url: FakeResponse(_page_html(UNRESOLVED_VALUE_BUKKEN_HTML)))
+
+    results = mansionreview.scrap_from_search("http://example.com")
+
+    assert len(results) == 1
+    assert results[0][1] == 4000
+    assert results[0][4] == 80.0
+
+
 def test_scrap_estate_data_raises_when_pagination_missing(monkeypatch):
     monkeypatch.setattr(mansionreview, "load_page", lambda url: FakeResponse(_page_html()))
 

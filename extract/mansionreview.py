@@ -54,18 +54,28 @@ def scrap_from_search(url):
                 continue
 
             _,_,price,unit_price,area,room_type,num_floor,dire,eva=infos[:9]
-        
+
+            try:
+                price_value=int(re.sub(r'[万円,]', '', price))
+                area_value=float(re.sub(r'[m²,]', '', area))
+                tsubo_tanka=price_value/area_value*3.306
+                eva_value=int(re.sub(r'[万円割安,]', '', eva.strip())) if eva.strip() not in ["相応","評価中"] else 0
+                age=(lambda y, m: (datetime.now().year - y) + (datetime.now().month - m) / 12)(*map(int, construction_date[:-1].split("年")))
+            except (ValueError, ZeroDivisionError):
+                # 価格・面積・築年月等が"-"など未確定の物件は坪単価を計算できないためスキップする
+                continue
+
             bukken_results.append([
                 building_name,
-                int(re.sub(r'[万円,]', '', price)),
+                price_value,
                 address,
-                (lambda y, m: (datetime.now().year - y) + (datetime.now().month - m) / 12)(*map(int, construction_date[:-1].split("年"))),
-                float(re.sub(r'[m²,]', '', area)),
-                int(re.sub(r'[万円,]', '', price))/float(re.sub(r'[m²,]', '', area))*3.306,
+                age,
+                area_value,
+                tsubo_tanka,
                 room_type,
                 num_floor,
                 dire,
-                int(re.sub(r'[万円割安,]', '', eva.strip(),)) if eva.strip() not in ["相応","評価中"] else 0,
+                eva_value,
                 re.sub(r'\s+', '', floor_max_min),
                 num_rooms,
             ])
