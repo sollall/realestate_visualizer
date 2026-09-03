@@ -4,3 +4,4 @@ __pycache__
 image/
 password.py
 .venv
+data/cache/
