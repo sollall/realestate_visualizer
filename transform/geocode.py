@@ -13,22 +13,39 @@ from extract.utils import search_address
 DEFAULT_CACHE_PATH = Path("data/cache/geocode_cache.json")
 
 
-def _load_cache(cache_path):
-    if not cache_path.exists():
-        return {}
-    with open(cache_path, encoding="utf-8") as f:
-        return json.load(f)
+class GeocodeCache:
+    """住所->[lon,lat]のジオコーディング結果をJSONファイルに永続化するキャッシュ"""
 
+    def __init__(self, cache_path=DEFAULT_CACHE_PATH):
+        self.cache_path = Path(cache_path)
+        self._data = self._load()
 
-def _save_cache(cache_path, cache):
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(cache_path, "w", encoding="utf-8") as f:
-        json.dump(cache, f, ensure_ascii=False)
+    def _load(self):
+        if not self.cache_path.exists():
+            return {}
+        with open(self.cache_path, encoding="utf-8") as f:
+            return json.load(f)
+
+    def save(self):
+        self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.cache_path, "w", encoding="utf-8") as f:
+            json.dump(self._data, f, ensure_ascii=False)
+
+    def __contains__(self, address):
+        return address in self._data
+
+    def get(self, address):
+        """キャッシュ済みなら(lon,lat)、無ければNoneを返す"""
+        entry = self._data.get(address)
+        return tuple(entry) if entry is not None else None
+
+    def set(self, address, lon, lat):
+        self._data[address] = [lon, lat]
 
 
 def get_lat_lon(addresses, cache_path=DEFAULT_CACHE_PATH):
 
-    cache = _load_cache(cache_path)
+    cache = GeocodeCache(cache_path)
 
     # 同一建物の複数部屋で住所が重複するため、ユニークかつ未キャッシュの住所のみ問い合わせる
     addresses_to_fetch = sorted({a for a in addresses if a not in cache})
@@ -38,13 +55,13 @@ def get_lat_lon(addresses, cache_path=DEFAULT_CACHE_PATH):
             with tqdm(total=len(addresses_to_fetch)) as pbar:
                 for address, (lon, lat) in zip(addresses_to_fetch, pool.imap(search_address, addresses_to_fetch)):
                     if lon is not None and lat is not None:
-                        cache[address] = [lon, lat]
+                        cache.set(address, lon, lat)
                     pbar.update(1)
 
         # 取得できなかった住所は次回再トライできるよう、キャッシュには書き込まない
-        _save_cache(cache_path, cache)
+        cache.save()
 
-    lons=[cache.get(address, [None, None])[0] for address in addresses]
-    lats=[cache.get(address, [None, None])[1] for address in addresses]
+    lons=[(cache.get(address) or (None, None))[0] for address in addresses]
+    lats=[(cache.get(address) or (None, None))[1] for address in addresses]
 
     return lons,lats

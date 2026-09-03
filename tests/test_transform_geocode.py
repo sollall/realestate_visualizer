@@ -24,6 +24,30 @@ class FakePool:
         return (func(item) for item in iterable)
 
 
+def test_geocode_cache_set_get_contains(tmp_path):
+    cache = geocode.GeocodeCache(tmp_path / "cache.json")
+
+    assert "東京都A区1-1" not in cache
+    assert cache.get("東京都A区1-1") is None
+
+    cache.set("東京都A区1-1", 139.0, 35.0)
+
+    assert "東京都A区1-1" in cache
+    assert cache.get("東京都A区1-1") == (139.0, 35.0)
+
+
+def test_geocode_cache_persists_across_instances(tmp_path):
+    cache_path = tmp_path / "cache.json"
+
+    cache = geocode.GeocodeCache(cache_path)
+    cache.set("東京都A区1-1", 139.0, 35.0)
+    cache.save()
+
+    reloaded = geocode.GeocodeCache(cache_path)
+
+    assert reloaded.get("東京都A区1-1") == (139.0, 35.0)
+
+
 def test_get_lat_lon_dedupes_and_calls_search_address_once_per_unique_address(monkeypatch, tmp_path):
     monkeypatch.setattr(geocode, "Pool", FakePool)
 
