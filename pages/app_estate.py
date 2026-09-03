@@ -5,7 +5,7 @@ import numpy as np
 
 from analysis.colors import scale_color
 from analysis.filters import filter_range
-from analysis.loader import list_csv_files, load_csv
+from analysis.loader import list_csv_files, load_csv, load_railway_geojson
 
 target_folder = "activelist"
 
@@ -25,6 +25,13 @@ with st.sidebar:
         'dark_no_labels',
         'light_no_labels',
     ])
+
+    railway_lines_geojson, railway_stations_geojson = load_railway_geojson()
+    if railway_lines_geojson is None and railway_stations_geojson is None:
+        st.caption("鉄道データが見つかりません。`scripts/fetch_railway_data.py`を実行してください。")
+        show_railway = False
+    else:
+        show_railway = st.checkbox('路線・駅を表示', value=True)
 
 dataframe=load_csv(target_folder, base_data_name)
 
@@ -69,6 +76,33 @@ layer = pdk.Layer(
     id="map",
 )
 
+# 物件のマーカーが路線・駅の下に隠れないよう、路線・駅は先に(下に)積む
+layers = []
+
+if show_railway:
+    if railway_lines_geojson is not None:
+        layers.append(pdk.Layer(
+            "GeoJsonLayer",
+            data=railway_lines_geojson,
+            stroked=True,
+            filled=False,
+            get_line_color=[120, 120, 120],
+            line_width_min_pixels=1.5,
+        ))
+    if railway_stations_geojson is not None:
+        layers.append(pdk.Layer(
+            "GeoJsonLayer",
+            data=railway_stations_geojson,
+            stroked=True,
+            filled=True,
+            get_fill_color=[255, 255, 255, 220],
+            get_line_color=[120, 120, 120],
+            get_point_radius=40,
+            point_radius_min_pixels=2,
+        ))
+
+layers.append(layer)
+
 # 初期表示の設定
 view_state = pdk.ViewState(
     latitude=35.6802117,
@@ -78,7 +112,7 @@ view_state = pdk.ViewState(
 
 # Pydeckチャートを表示
 chart = pdk.Deck(
-    layers=[layer],
+    layers=layers,
     initial_view_state=view_state,
     map_style=mapstyle,
 )
