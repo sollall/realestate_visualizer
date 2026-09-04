@@ -12,8 +12,11 @@ BayesianRidgeは予測の事後分散も返すため、GPと同様に
 合わせてk-meansで配置する。これにより海上や郊外など物件が存在しない
 エリアに基底の影響が及ばなくなる。それでも回帰は線形結合である以上、
 観測点から離れた場所では値が不当に高く/低く外挿されうるため、
-最寄りの観測点までの距離が典型的な観測点間隔から大きく離れたグリッド点は
-「データに支持されていない」として予測結果から除外する。
+最寄りの観測点までの(緯度経度だけで測った)距離が典型的な観測点間隔から
+大きく離れたグリッド点は「データに支持されていない」として予測結果から
+除外する。この判定は緯度経度のみで行い、築年数・階数などの断面値は
+含めない。断面値まで含めて距離を測ると、選んだ断面(例: 築35年)の
+近くに実データが少ないだけで全グリッド点が消えてしまうため。
 
 緯度経度だけでなく築年数・階数のような属性も入力次元に加えられる
 (extra_columns)。地図として可視化する際はこれらの属性を1つの値に固定した
@@ -134,18 +137,27 @@ def fit_price_surface(
         X_grid_raw = grid_spatial
     X_grid = X_grid_raw / scale
 
-    # 観測点同士の典型的な間隔(標準化空間での最近傍距離の中央値)を基準に、
-    # そこから離れすぎたグリッド点(空間的または属性的にデータに支持されない点)を除外する
-    data_neighbors = NearestNeighbors(n_neighbors=min(2, len(X))).fit(X)
-    self_dists, _ = data_neighbors.kneighbors(X)
+    # 観測点同士の典型的な間隔(標準化した緯度経度だけでの最近傍距離の中央値)を基準に、
+    # 空間的に離れすぎたグリッド点(海上・郊外など物件が存在しないエリア)を除外する。
+    # 築年数・階数などの断面値がその地点の観測データと異なることは「支持されない」に
+    #含めない(断面によって全グリッド点が消えてしまうため)。そちらの不確実性は
+    # price_std(予測分散)側に自然に表れる。
+    n_spatial = len(SPATIAL_COLUMNS)
+    X_spatial = X[:, :n_spatial]
+    data_neighbors = NearestNeighbors(n_neighbors=min(2, len(X_spatial))).fit(X_spatial)
+    self_dists, _ = data_neighbors.kneighbors(X_spatial)
     typical_spacing = np.median(self_dists[:, -1]) if self_dists.shape[1] > 1 else 0.0
     support_threshold = typical_spacing * unsupported_distance_factor
 
-    nearest_obs_dist, _ = data_neighbors.kneighbors(X_grid, n_neighbors=1)
+    nearest_obs_dist, _ = data_neighbors.kneighbors(X_grid[:, :n_spatial], n_neighbors=1)
     is_supported = nearest_obs_dist[:, 0] <= support_threshold if support_threshold > 0 else np.ones(len(X_grid), dtype=bool)
 
     X_grid_raw = X_grid_raw[is_supported]
     X_grid = X_grid[is_supported]
+
+    if len(X_grid) == 0:
+        return pd.DataFrame(columns=["lons", "lats", "price_mean", "price_std"]), model
+
     grid_features = _rbf_features(X_grid, centers, length_scale)
     mean_log, std_log = model.predict(grid_features, return_std=True)
 

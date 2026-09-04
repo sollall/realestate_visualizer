@@ -48,6 +48,10 @@ with st.spinner("ベイズ線形回帰を計算中..."):
         slice_values=slice_values,
     )
 
+if grid_df.empty:
+    st.warning("この地点・断面に近い観測データが無いため、地図を描画できませんでした。グリッド解像度や断面の値を変えてみてください。")
+    st.stop()
+
 # 不確実性(予測標準偏差)が大きいセルほど薄く表示する
 std_min, std_max = grid_df["price_std"].min(), grid_df["price_std"].max()
 confidence = 1 - (grid_df["price_std"] - std_min) / (std_max - std_min + 1e-9)

@@ -138,3 +138,24 @@ def test_fit_price_surface_without_slice_values_uses_median():
     )
 
     assert np.allclose(grid_default["price_mean"].to_numpy(), grid_median["price_mean"].to_numpy())
+
+
+def test_fit_price_surface_slice_far_from_typical_value_still_returns_results():
+    """断面(築年数)の値が観測データの典型的な値から離れていても、空間的に近い観測点が
+    あれば結果が空にならないことを確認する。以前はマスキングの距離計算に築年数まで
+    含めていたため、断面の値が実データと合わないだけで全グリッド点が消えて
+    BayesianRidge.predict()が空配列でクラッシュしていた(実際に報告されたバグ)。"""
+    rng = np.random.default_rng(0)
+    n = 100
+    lons = rng.uniform(139.70, 139.72, n)
+    lats = rng.uniform(35.65, 35.67, n)
+    age = rng.uniform(3, 8, n)  # 築年数はどこも3〜8年に集中させておく
+    price = 400 + rng.normal(scale=10, size=n)
+    df = pd.DataFrame({"lons": lons, "lats": lats, "age": age, "坪単価": price})
+
+    # 実データの分布(3〜8年)から大きく離れた断面を指定する
+    grid_df, _ = fit_price_surface(
+        df, grid_size=15, extra_columns=("age",), slice_values={"age": 35.0}
+    )
+
+    assert len(grid_df) > 0
