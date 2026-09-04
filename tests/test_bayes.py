@@ -101,3 +101,40 @@ def test_fit_price_surface_does_not_extrapolate_wildly():
 
     assert grid_df["price_mean"].min() > observed_min - margin
     assert grid_df["price_mean"].max() < observed_max + margin
+
+
+def _make_synthetic_data_with_age(n=200, seed=0):
+    rng = np.random.default_rng(seed)
+    lons = rng.uniform(139.70, 139.75, n)
+    lats = rng.uniform(35.65, 35.70, n)
+    age = rng.uniform(0, 40, n)
+    # 築年数が古いほど坪単価が下がる、というシンプルな真の関係を仕込む
+    price = 500 - age * 5 + rng.normal(scale=5, size=n)
+    return pd.DataFrame({"lons": lons, "lats": lats, "age": age, "坪単価": price})
+
+
+def test_fit_price_surface_with_extra_column_reproduces_slice_trend():
+    """extra_columnsに築年数を加え、断面(slice_values)を変えると
+    その属性軸に沿った傾向(古いほど安い)を再現することを確認する。"""
+    df = _make_synthetic_data_with_age()
+
+    grid_new, _ = fit_price_surface(
+        df, grid_size=15, extra_columns=("age",), slice_values={"age": 5}
+    )
+    grid_old, _ = fit_price_surface(
+        df, grid_size=15, extra_columns=("age",), slice_values={"age": 35}
+    )
+
+    assert grid_new["price_mean"].mean() > grid_old["price_mean"].mean()
+
+
+def test_fit_price_surface_without_slice_values_uses_median():
+    """slice_valuesを指定しない場合、extra_columnsの中央値を使った断面になることを確認する。"""
+    df = _make_synthetic_data_with_age()
+
+    grid_default, _ = fit_price_surface(df, grid_size=10, extra_columns=("age",))
+    grid_median, _ = fit_price_surface(
+        df, grid_size=10, extra_columns=("age",), slice_values={"age": df["age"].median()}
+    )
+
+    assert np.allclose(grid_default["price_mean"].to_numpy(), grid_median["price_mean"].to_numpy())

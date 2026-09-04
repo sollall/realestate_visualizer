@@ -17,8 +17,36 @@ with st.sidebar:
 
 data = load_csv(target_folder, base_data_name)
 
+extra_columns = []
+slice_values = {}
+
+with st.sidebar:
+    st.subheader("断面(この値に固定して地図を作る)")
+
+    age_min, age_max = float(data["age"].min()), float(data["age"].max())
+    if age_max > age_min:
+        age_slice = st.slider("築年数", age_min, age_max, float(data["age"].median()))
+        extra_columns.append("age")
+        slice_values["age"] = age_slice
+
+    # 「7階」のような文字列から階数を数値として取り出す。取得できなかった行はNaNになる
+    if "階数" in data.columns:
+        data["floor_num"] = data["階数"].astype(str).str.extract(r"(-?\d+)").iloc[:, 0].astype(float)
+        floor_values = data["floor_num"].dropna()
+        if len(floor_values) >= 5 and floor_values.max() > floor_values.min():
+            floor_slice = st.slider(
+                "階数", float(floor_values.min()), float(floor_values.max()), float(floor_values.median())
+            )
+            extra_columns.append("floor_num")
+            slice_values["floor_num"] = floor_slice
+
 with st.spinner("ベイズ線形回帰を計算中..."):
-    grid_df, model = fit_price_surface(data, grid_size=grid_size)
+    grid_df, model = fit_price_surface(
+        data,
+        grid_size=grid_size,
+        extra_columns=tuple(extra_columns),
+        slice_values=slice_values,
+    )
 
 # 不確実性(予測標準偏差)が大きいセルほど薄く表示する
 std_min, std_max = grid_df["price_std"].min(), grid_df["price_std"].max()
