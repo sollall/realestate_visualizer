@@ -7,17 +7,17 @@ from analysis.colors import scale_color
 from analysis.loader import list_csv_files, load_csv
 
 st.set_page_config(page_title="単価マップ(ベイズ推定)", layout="wide")
-st.title("単価マップ(ガウス過程によるベイズ推定)")
+st.title("単価マップ(RBF基底のベイズ線形回帰)")
 
 target_folder = "activelist"
 
 with st.sidebar:
     base_data_name = st.selectbox("対象のデータ", list_csv_files(target_folder))
-    grid_size = st.slider("グリッド解像度", min_value=15, max_value=60, value=30, step=5)
+    grid_size = st.slider("グリッド解像度", min_value=20, max_value=100, value=50, step=5)
 
 data = load_csv(target_folder, base_data_name)
 
-with st.spinner("ガウス過程回帰を計算中..."):
+with st.spinner("ベイズ線形回帰を計算中..."):
     grid_df, model = fit_price_surface(data, grid_size=grid_size)
 
 # 不確実性(予測標準偏差)が大きいセルほど薄く表示する

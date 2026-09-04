@@ -1,4 +1,4 @@
-"""analysis/bayes.pyのガウス過程による単価曲面推定を、小さな合成データで検証するテスト。"""
+"""analysis/bayes.pyのRBF基底のベイズ線形回帰による単価曲面推定を、小さな合成データで検証するテスト。"""
 
 import numpy as np
 import pandas as pd
@@ -29,7 +29,8 @@ def test_fit_price_surface_returns_expected_columns_and_shape():
     grid_df, model = fit_price_surface(df, grid_size=grid_size)
 
     assert list(grid_df.columns) == ["lons", "lats", "price_mean", "price_std"]
-    assert len(grid_df) == grid_size * grid_size
+    # データに支持されない(観測点から離れすぎた)グリッド点は除外されうるため <= で確認する
+    assert len(grid_df) <= grid_size * grid_size
     assert model is not None
 
 
@@ -63,3 +64,40 @@ def test_fit_price_surface_learns_spatial_trend():
     east = grid_df[grid_df["lons"] >= grid_df["lons"].median()]
 
     assert east["price_mean"].mean() > west["price_mean"].mean()
+
+
+def test_fit_price_surface_masks_unsupported_far_regions():
+    """密集クラスタから離れた外れ値が1点あっても、間の空白域(海や郊外を模した領域)
+    まで推定結果で埋めてしまわない(=外挿しすぎない)ことを確認する。"""
+    rng = np.random.default_rng(0)
+    n = 60
+    lons = rng.uniform(139.70, 139.75, n)
+    lats = rng.uniform(35.65, 35.70, n)
+    price = 400 + rng.normal(scale=10, size=n)
+    df = pd.DataFrame({"lons": lons, "lats": lats, "坪単価": price})
+    df = pd.concat(
+        [df, pd.DataFrame({"lons": [139.45], "lats": [35.80], "坪単価": [350]})],
+        ignore_index=True,
+    )
+
+    grid_size = 40
+    grid_df, _ = fit_price_surface(df, grid_size=grid_size)
+
+    assert len(grid_df) < grid_size * grid_size
+
+    gap_region = grid_df[(grid_df["lons"] < 139.6) & (grid_df["lons"] > 139.5)]
+    assert len(gap_region) == 0
+
+
+def test_fit_price_surface_does_not_extrapolate_wildly():
+    """予測値が観測範囲から極端に外れない(基底が疎な領域で暴走しない)ことを確認する。"""
+    df = _make_synthetic_data()
+
+    grid_df, _ = fit_price_surface(df, grid_size=20)
+
+    observed_min = df["坪単価"].min()
+    observed_max = df["坪単価"].max()
+    margin = observed_max - observed_min
+
+    assert grid_df["price_mean"].min() > observed_min - margin
+    assert grid_df["price_mean"].max() < observed_max + margin
