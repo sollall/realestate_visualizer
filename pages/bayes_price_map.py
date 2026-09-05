@@ -23,9 +23,9 @@ slice_values = {}
 with st.sidebar:
     st.subheader("断面(この値に固定して地図を作る)")
 
-    age_min, age_max = float(data["age"].min()), float(data["age"].max())
+    age_min, age_max = int(np.floor(data["age"].min())), int(np.ceil(data["age"].max()))
     if age_max > age_min:
-        age_slice = st.slider("築年数", age_min, age_max, float(data["age"].median()))
+        age_slice = st.slider("築年数", age_min, age_max, int(round(data["age"].median())), step=1)
         extra_columns.append("age")
         slice_values["age"] = age_slice
 
@@ -35,7 +35,11 @@ with st.sidebar:
         floor_values = data["floor_num"].dropna()
         if len(floor_values) >= 5 and floor_values.max() > floor_values.min():
             floor_slice = st.slider(
-                "階数", float(floor_values.min()), float(floor_values.max()), float(floor_values.median())
+                "階数",
+                int(floor_values.min()),
+                int(floor_values.max()),
+                int(round(floor_values.median())),
+                step=1,
             )
             extra_columns.append("floor_num")
             slice_values["floor_num"] = floor_slice
