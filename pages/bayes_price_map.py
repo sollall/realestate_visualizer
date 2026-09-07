@@ -14,6 +14,14 @@ target_folder = "activelist"
 with st.sidebar:
     base_data_name = st.selectbox("対象のデータ", list_csv_files(target_folder))
     grid_size = st.slider("グリッド解像度", min_value=20, max_value=100, value=50, step=5)
+    n_centers_per_side = st.slider(
+        "凹凸の細かさ(RBF中心数)",
+        min_value=4,
+        max_value=20,
+        value=7,
+        help="大きくするほどRBF基底の中心が密になり、駅前後のような局所的な単価の上下が"
+        "表現されやすくなる一方、観測データが少ないと過学習(ノイズへの追従)しやすくなる。",
+    )
 
 data = load_csv(target_folder, base_data_name)
 
@@ -48,6 +56,7 @@ with st.spinner("ベイズ線形回帰を計算中..."):
     grid_df, model = fit_price_surface(
         data,
         grid_size=grid_size,
+        n_centers_per_side=n_centers_per_side,
         extra_columns=tuple(extra_columns),
         slice_values=slice_values,
     )
