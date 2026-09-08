@@ -6,7 +6,7 @@ from analysis.colors import scale_color
 from analysis.loader import list_csv_files, load_csv
 
 target_folder = "activelist"
-DATASET_ID = "plateau-13106-taito-ku-2023"
+DATASET_ID = "plateau-13106-taito-ku-2024"
 
 with st.sidebar:
     base_data_name=st.selectbox('対象のデータ', list_csv_files(target_folder))
