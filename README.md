@@ -25,8 +25,11 @@ uv run streamlit run Home.py
 
 `Home.py` がメイン画面で、`pages/` 配下の各ページ(analytics, app_estate, plateau, price3d)がサイドバーから選択できます。
 
-`plateau`ページはPLATEAUの3D都市モデルデータセットを利用します。初回は以下のコマンドで
-対象データセット(`plateau-13106-taito-ku-2024`)をローカルにインストールしてください。
+`plateau`ページはPLATEAUの3D都市モデルデータセットを利用します。サイドバーの「対象の区」で
+東京23区から表示したい区を選べます。選んだ区のデータセットが未インストールの場合は
+エラーメッセージにインストールコマンドが表示されるので、それに従ってインストールして
+ください(区とデータセットIDの対応は`pages/plateau.py`の`WARD_DATASETS`を参照)。例えば
+台東区の場合は以下の通りです。
 
 ```
 uv run plateaukit install plateau-13106-taito-ku-2024

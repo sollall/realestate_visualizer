@@ -6,19 +6,46 @@ from analysis.colors import scale_color, usage_color, usage_legend
 from analysis.loader import list_csv_files, load_csv
 
 target_folder = "activelist"
-DATASET_ID = "plateau-13106-taito-ku-2024"
+
+# 東京23区: 区名 -> (PLATEAUデータセットID, 表示の中心に使う代表駅)
+WARD_DATASETS = {
+    "千代田区": ("plateau-13101-chiyoda-ku-2023", "東京駅"),
+    "中央区": ("plateau-13102-chuo-ku-2023", "銀座駅"),
+    "港区": ("plateau-13103-minato-ku-2023", "六本木駅"),
+    "新宿区": ("plateau-13104-shinjuku-ku-2023", "新宿駅"),
+    "文京区": ("plateau-13105-bunkyo-ku-2023", "後楽園駅"),
+    "台東区": ("plateau-13106-taito-ku-2024", "蔵前駅"),
+    "墨田区": ("plateau-13107-sumida-ku-2024", "錦糸町駅"),
+    "江東区": ("plateau-13108-koto-ku-2023", "豊洲駅"),
+    "品川区": ("plateau-13109-shinagawa-ku-2024", "品川駅"),
+    "目黒区": ("plateau-13110-meguro-ku-2023", "目黒駅"),
+    "大田区": ("plateau-13111-ota-ku-2023", "蒲田駅"),
+    "世田谷区": ("plateau-13112-setagaya-ku-2023", "三軒茶屋駅"),
+    "渋谷区": ("plateau-13113-shibuya-ku-2023", "渋谷駅"),
+    "中野区": ("plateau-13114-nakano-ku-2023", "中野駅"),
+    "杉並区": ("plateau-13115-suginami-ku-2024", "荻窪駅"),
+    "豊島区": ("plateau-13116-toshima-ku-2023", "池袋駅"),
+    "北区": ("plateau-13117-kita-ku-2023", "赤羽駅"),
+    "荒川区": ("plateau-13118-arakawa-ku-2023", "日暮里駅"),
+    "板橋区": ("plateau-13119-itabashi-ku-2023", "板橋駅"),
+    "練馬区": ("plateau-13120-nerima-ku-2023", "練馬駅"),
+    "足立区": ("plateau-13121-adachi-ku-2023", "北千住駅"),
+    "葛飾区": ("plateau-13122-katsushika-ku-2023", "亀有駅"),
+    "江戸川区": ("plateau-13123-edogawa-ku-2023", "葛西駅"),
+}
 
 with st.sidebar:
     base_data_name=st.selectbox('対象のデータ', list_csv_files(target_folder))
+    ward = st.selectbox("対象の区", list(WARD_DATASETS.keys()), index=list(WARD_DATASETS.keys()).index("台東区"))
 
 dataframe=load_csv(target_folder, base_data_name)
 # Apply the function to create a color column
 dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
 
-# ユーザーが駅を選ぶ
-station = st.selectbox("駅を選んでください", ["蔵前駅"])
+DATASET_ID, station = WARD_DATASETS[ward]
+st.caption(f"{ward}({station}周辺)のPLATEAUデータを表示しています。")
 
-# 都市データ読み込み（例: 台東区）
+# 都市データ読み込み
 dataset = load_dataset(DATASET_ID)
 
 # plateauのlayerの定義　対象エリアを取得
