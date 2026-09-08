@@ -50,14 +50,23 @@ dataset = load_dataset(DATASET_ID)
 
 # plateauのlayerの定義　対象エリアを取得
 try:
-    area = dataset.area_from_landmark(station, min_size=[3000, 3000])
-    gdf = area.gdf.copy()
+    # 駅の座標が周辺の建物データとうまく重ならないことがあるため、
+    # 3km四方で空振りした場合は8km四方まで広げて再試行する。
+    for min_size in ([3000, 3000], [8000, 8000]):
+        area = dataset.area_from_landmark(station, min_size=min_size)
+        gdf = area.gdf.copy()
+        if not gdf.empty:
+            break
 except RuntimeError:
     st.error(
         f"PLATEAUデータセット `{DATASET_ID}` がローカルに未インストールです。"
         f"次のコマンドで取得してください:\n\n"
         f"```\nuv run plateaukit install {DATASET_ID}\n```"
     )
+    st.stop()
+
+if gdf.empty:
+    st.warning(f"{station}周辺にPLATEAUの建物データが見つかりませんでした。")
     st.stop()
 
 gdf["fill_color"] = gdf["usage"].map(usage_color)
