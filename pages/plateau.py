@@ -1,17 +1,12 @@
 import streamlit as st
 from plateaukit import load_dataset
 import pydeck as pdk
-import pandas as pd
-from geopandas import GeoDataFrame
-import requests
 
 from analysis.colors import scale_color
 from analysis.loader import list_csv_files, load_csv
 
 target_folder = "activelist"
-
-# 都市データ読み込み（例: 渋谷区）
-dataset = load_dataset("plateau-13106-taito-ku-2023")
+DATASET_ID = "plateau-13106-taito-ku-2023"
 
 with st.sidebar:
     base_data_name=st.selectbox('対象のデータ', list_csv_files(target_folder))
@@ -23,9 +18,21 @@ dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
 # ユーザーが駅を選ぶ
 station = st.selectbox("駅を選んでください", ["蔵前駅"])
 
+# 都市データ読み込み（例: 台東区）
+dataset = load_dataset(DATASET_ID)
+
 # plateauのlayerの定義　対象エリアを取得
-area = dataset.area_from_landmark(station,min_size=[3000, 3000])
-gdf = area.gdf.copy()
+try:
+    area = dataset.area_from_landmark(station, min_size=[3000, 3000])
+    gdf = area.gdf.copy()
+except RuntimeError:
+    st.error(
+        f"PLATEAUデータセット `{DATASET_ID}` がローカルに未インストールです。"
+        f"次のコマンドで取得してください:\n\n"
+        f"```\nuv run plateaukit install {DATASET_ID}\n```"
+    )
+    st.stop()
+
 usage_color_map = {
     "住宅": [135, 206, 250],         # 水色
     "共同住宅": [70, 130, 180],      # 鉄紺
@@ -66,7 +73,6 @@ building3d = pdk.Layer(
 
 # scrapデータの処理
 data = dataframe.to_dict(orient='records')
-st.session_state.candidates=pd.DataFrame(columns=dataframe.columns)
 
 layer = pdk.Layer(
     "ColumnLayer",

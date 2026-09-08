@@ -25,6 +25,13 @@ uv run streamlit run Home.py
 
 `Home.py` がメイン画面で、`pages/` 配下の各ページ(analytics, app_estate, plateau, price3d)がサイドバーから選択できます。
 
+`plateau`ページはPLATEAUの3D都市モデルデータセットを利用します。初回は以下のコマンドで
+対象データセット(`plateau-13106-taito-ku-2023`)をローカルにインストールしてください。
+
+```
+uv run plateaukit install plateau-13106-taito-ku-2023
+```
+
 # テスト
 
 ```
