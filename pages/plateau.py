@@ -2,7 +2,7 @@ import streamlit as st
 from plateaukit import load_dataset
 import pydeck as pdk
 
-from analysis.colors import scale_color, usage_color
+from analysis.colors import scale_color, usage_color, usage_legend
 from analysis.loader import list_csv_files, load_csv
 
 target_folder = "activelist"
@@ -34,6 +34,23 @@ except RuntimeError:
     st.stop()
 
 gdf["fill_color"] = gdf["usage"].map(usage_color)
+
+with st.sidebar:
+    st.markdown("**建物用途の凡例**")
+    legend_html = ""
+    current_group = None
+    for group, label, color in usage_legend():
+        if group != current_group:
+            legend_html += f"<div style='margin-top:6px;font-weight:600;'>{group}</div>"
+            current_group = group
+        swatch = f"rgb({color[0]},{color[1]},{color[2]})"
+        legend_html += (
+            "<div style='display:flex;align-items:center;margin:2px 0;'>"
+            f"<span style='display:inline-block;width:14px;height:14px;"
+            f"background:{swatch};border-radius:2px;margin-right:6px;flex-shrink:0;'></span>"
+            f"<span>{label}</span></div>"
+        )
+    st.markdown(legend_html, unsafe_allow_html=True)
 
 
 bbox = gdf.total_bounds

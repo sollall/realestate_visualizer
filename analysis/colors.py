@@ -60,3 +60,46 @@ USAGE_COLOR_MAP = {
 def usage_color(usage, default=(200, 200, 200)):
     """建物用途(bldg:usage)を色にマッピングする。未知の区分は薄グレーにフォールバックする。"""
     return USAGE_COLOR_MAP.get(usage, list(default))
+
+
+# 凡例表示用のグループ分け(USAGE_COLOR_MAPのコメント区分と対応)。
+_USAGE_GROUPS = {
+    "住宅": "住居系",
+    "共同住宅": "住居系",
+    "店舗等併用住宅": "住居系",
+    "店舗等併用共同住宅": "住居系",
+    "作業所併用住宅": "住居系",
+    "商業施設": "商業系",
+    "業務施設": "商業系",
+    "宿泊施設": "商業系",
+    "官公庁施設": "公共・文教厚生系",
+    "文教厚生施設": "公共・文教厚生系",
+    "運輸倉庫施設": "工業・物流系",
+    "工場": "工業・物流系",
+    "供給処理施設": "工業・物流系",
+    "自動車車庫": "工業・物流系",
+    "農林漁業用施設": "農林漁業系",
+    "遊戯施設": "遊戯・運動系",
+    "運動施設": "遊戯・運動系",
+    "その他": "未分類",
+    "不明": "未分類",
+}
+_USAGE_GROUP_ORDER = [
+    "住居系",
+    "商業系",
+    "公共・文教厚生系",
+    "工業・物流系",
+    "農林漁業系",
+    "遊戯・運動系",
+    "未分類",
+]
+
+
+def usage_legend():
+    """凡例表示用に(グループ名, 区分名, 色)のリストをグループ順に返す。"""
+    items = [
+        (_USAGE_GROUPS[label], label, color)
+        for label, color in USAGE_COLOR_MAP.items()
+        if label is not None
+    ]
+    return sorted(items, key=lambda item: _USAGE_GROUP_ORDER.index(item[0]))
