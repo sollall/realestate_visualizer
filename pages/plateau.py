@@ -42,6 +42,15 @@ dataframe=load_csv(target_folder, base_data_name)
 # Apply the function to create a color column
 dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
 
+# 「5階」のような文字列から階数を取り出し、1フロアあたり3mとして高さの目安を出す。
+# 階数の情報が無いデータ(suumoなど)では1階相当の高さにしておく。
+FLOOR_HEIGHT_M = 3
+if '階数' in dataframe.columns:
+    floor_num = dataframe['階数'].astype(str).str.extract(r'(-?\d+)').iloc[:, 0].astype(float)
+    dataframe['elevation'] = floor_num.fillna(1) * FLOOR_HEIGHT_M
+else:
+    dataframe['elevation'] = FLOOR_HEIGHT_M
+
 DATASET_ID, station = WARD_DATASETS[ward]
 st.caption(f"{ward}({station}周辺)のPLATEAUデータを表示しています。")
 
@@ -118,7 +127,7 @@ layer = pdk.Layer(
     data=data,
     get_position="[lons, lats]",
     radius=4,
-    get_elevation=400,
+    get_elevation="elevation",
     get_fill_color="color",
     pickable=True,  # ← 有効化
     auto_highlight=True,
@@ -132,7 +141,11 @@ deck = pdk.Deck(
     ],
     initial_view_state=view_state,
     tooltip={
-        "html": "<b>{name}</b>",
+        "html": (
+            "<b>{address}</b>"
+            "<div>坪単価: {坪単価}万円 / 階数: {階数} (目安高さ約{elevation}m)</div>"
+            "<div>用途: {usage} / 建物高さ: {measuredHeight}m</div>"
+        ),
         "style": {
             "font-family": "sans-serif",
             "font-size": "10px",
