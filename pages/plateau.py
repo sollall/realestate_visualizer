@@ -102,7 +102,12 @@ bbox = gdf.total_bounds
 points = [(bbox[0], bbox[1]), (bbox[2], bbox[3])]
 view_state = pdk.data_utils.compute_view(points, view_proportion=1)
 view_state.pitch = 45
-opacity = 1
+
+with st.sidebar:
+    opacity = st.slider(
+        "建物の不透明度", 0.1, 1.0, 0.5, step=0.05,
+        help="下げると建物が半透明になり、内側に埋もれる物件マーカーが見やすくなります。",
+    )
 
 # 建物の3D表示レイヤー（tooltipに使える列を追加）
 #gdf["name"] = gdf.index.astype(str)  # tooltipに使う列
@@ -126,18 +131,20 @@ layer = pdk.Layer(
     "ColumnLayer",
     data=data,
     get_position="[lons, lats]",
-    radius=4,
+    radius=5,
     get_elevation="elevation",
     get_fill_color="color",
     pickable=True,  # ← 有効化
     auto_highlight=True,
+    # 建物の中に埋もれて見えなくならないよう、深度テストを無効化して常に手前に描画する
+    parameters={"depthTest": False},
 )
 
 # デッキの作成
 deck = pdk.Deck(
     layers=[
-        layer,
         building3d,
+        layer,
     ],
     initial_view_state=view_state,
     tooltip={
