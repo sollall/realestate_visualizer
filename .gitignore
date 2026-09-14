@@ -5,3 +5,4 @@ image/
 password.py
 .venv
 data/cache/
+data/rawdata/railway/*.geojson
