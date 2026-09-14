@@ -94,6 +94,7 @@ if show_railway:
             filled=False,
             get_line_color=[120, 120, 120],
             line_width_min_pixels=1.5,
+            id="railway_lines",
         ))
     if railway_stations_geojson is not None:
         layers.append(pdk.Layer(
@@ -105,6 +106,7 @@ if show_railway:
             get_line_color=[120, 120, 120],
             get_point_radius=40,
             point_radius_min_pixels=2,
+            id="railway_stations",
         ))
 
 layers.append(layer)
