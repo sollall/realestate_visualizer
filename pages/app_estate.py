@@ -9,6 +9,12 @@ from analysis.loader import list_csv_files, load_csv, load_railway_geojson
 
 target_folder = "activelist"
 
+# 面積・築年数のスライダーを動かすたびにStreamlitはスクリプト全体を再実行するため、
+# キャッシュ無しだと毎回CSV読み込みや(全国分で重い)鉄道GeoJSONのパースが走ってしまう。
+# st.cache_dataで元データの読み込み自体を一度きりにし、再描画を軽くする。
+cached_load_csv = st.cache_data(load_csv)
+cached_load_railway_geojson = st.cache_data(load_railway_geojson)
+
 # 絞り込み条件の設定
 # Sidebar for external website
 with st.sidebar:
@@ -26,14 +32,14 @@ with st.sidebar:
         'light_no_labels',
     ])
 
-    railway_lines_geojson, railway_stations_geojson = load_railway_geojson()
+    railway_lines_geojson, railway_stations_geojson = cached_load_railway_geojson()
     if railway_lines_geojson is None and railway_stations_geojson is None:
         st.caption("鉄道データが見つかりません。`scripts/fetch_railway_data.py`を実行してください。")
         show_railway = False
     else:
         show_railway = st.checkbox('路線・駅を表示', value=True)
 
-dataframe=load_csv(target_folder, base_data_name)
+dataframe=cached_load_csv(target_folder, base_data_name)
 
 # Apply the function to create a color column
 dataframe['color'] = dataframe['坪単価'].apply(lambda x: scale_color(x))
