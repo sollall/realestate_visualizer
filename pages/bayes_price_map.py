@@ -11,6 +11,11 @@ st.title("単価マップ(RBF基底のベイズ線形回帰)")
 
 target_folder = "activelist"
 
+# グリッド解像度や断面のスライダーを動かすたびにStreamlitはスクリプト全体を再実行するため、
+# キャッシュ無しだとKMeans+BayesianRidgeの学習が毎回走ってしまう。
+# st.cache_dataで同じ引数(データ・グリッドサイズ・断面値)の組み合わせなら結果を使い回す。
+cached_fit_price_surface = st.cache_data(fit_price_surface)
+
 with st.sidebar:
     base_data_name = st.selectbox("対象のデータ", list_csv_files(target_folder))
     grid_size = st.slider("グリッド解像度", min_value=20, max_value=100, value=50, step=5)
@@ -45,7 +50,7 @@ with st.sidebar:
             slice_values["floor_num"] = floor_slice
 
 with st.spinner("ベイズ線形回帰を計算中..."):
-    grid_df, model = fit_price_surface(
+    grid_df, model = cached_fit_price_surface(
         data,
         grid_size=grid_size,
         extra_columns=tuple(extra_columns),
