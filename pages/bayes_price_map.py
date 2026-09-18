@@ -2,7 +2,7 @@ import numpy as np
 import pydeck as pdk
 import streamlit as st
 
-from analysis.bayes import fit_price_surface
+from analysis.bayes import fit_price_model, predict_price_grid
 from analysis.colors import scale_color
 from analysis.loader import list_csv_files, load_csv
 
@@ -11,16 +11,18 @@ st.title("単価マップ(RBF基底のベイズ線形回帰)")
 
 target_folder = "activelist"
 
-# グリッド解像度や断面のスライダーを動かすたびにStreamlitはスクリプト全体を再実行するため、
-# キャッシュ無しだとKMeans+BayesianRidgeの学習が毎回走ってしまう。
-# st.cache_dataで同じ引数(データ・グリッドサイズ・断面値)の組み合わせなら結果を使い回す。
-cached_fit_price_surface = st.cache_data(fit_price_surface)
+# グリッド解像度や断面のスライダーを動かすたびにStreamlitはスクリプト全体を再実行する。
+# fit_price_model(KMeans+BayesianRidgeの学習、重い)はデータとextra_columnsだけに
+# 依存するのでst.cache_resourceでキャッシュし、grid_size・断面が変わっても
+# 再学習させない。predict_price_grid(グリッド生成、軽い)は毎回そのまま呼ぶ。
+cached_fit_price_model = st.cache_resource(fit_price_model)
+cached_load_csv = st.cache_data(load_csv)
 
 with st.sidebar:
     base_data_name = st.selectbox("対象のデータ", list_csv_files(target_folder))
     grid_size = st.slider("グリッド解像度", min_value=20, max_value=100, value=50, step=5)
 
-data = load_csv(target_folder, base_data_name)
+data = cached_load_csv(target_folder, base_data_name)
 
 extra_columns = []
 slice_values = {}
@@ -50,8 +52,10 @@ with st.sidebar:
             slice_values["floor_num"] = floor_slice
 
 with st.spinner("ベイズ線形回帰を計算中..."):
-    grid_df, model = cached_fit_price_surface(
+    fitted = cached_fit_price_model(data, extra_columns=tuple(extra_columns))
+    grid_df = predict_price_grid(
         data,
+        fitted,
         grid_size=grid_size,
         extra_columns=tuple(extra_columns),
         slice_values=slice_values,

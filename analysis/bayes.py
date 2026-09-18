@@ -27,6 +27,8 @@ BayesianRidgeは予測の事後分散も返すため、GPと同様に
 中心配置・距離計算はすべて標準化した空間で行う。
 """
 
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
@@ -34,6 +36,20 @@ from sklearn.linear_model import BayesianRidge
 from sklearn.neighbors import NearestNeighbors
 
 SPATIAL_COLUMNS = ["lons", "lats"]
+
+
+@dataclass
+class PriceModel:
+    """fit_price_modelの学習結果。grid_size・slice_valuesに依存しないため、
+    断面や解像度を変えるだけならpredict_price_gridで使い回せる。"""
+
+    model: BayesianRidge
+    centers: np.ndarray
+    length_scale: float
+    scale: np.ndarray
+    feature_columns: list
+    data_neighbors: NearestNeighbors
+    typical_spacing: float
 
 
 def _rbf_centers(X, n_centers):
@@ -50,48 +66,28 @@ def _rbf_features(X, centers, length_scale):
     return np.exp(-sq_dist / (2 * length_scale ** 2))
 
 
-def fit_price_surface(
-    df,
-    grid_size=30,
-    padding_ratio=0.1,
-    n_centers_per_side=7,
-    unsupported_distance_factor=3.0,
-    extra_columns=(),
-    slice_values=None,
-):
-    """lons/lats(と任意の追加属性)を入力、坪単価を出力としてベイズ線形回帰を学習し、
-    緯度経度グリッド上の推定値を返す。
+def fit_price_model(df, extra_columns=(), n_centers_per_side=7):
+    """観測データからRBF基底の中心配置とBayesianRidgeを学習する(重い処理)。
+
+    grid_size・padding_ratio・slice_valuesのどれにも依存しないため、
+    地図の解像度や断面を変えるだけならこの学習をやり直す必要はなく、
+    predict_price_gridだけを呼び直せばよい。
 
     Parameters
     ----------
     df : pandas.DataFrame
         "lons", "lats", "坪単価" 列と、extra_columnsで指定した列を持つ観測データ。
-    grid_size : int
-        緯度・経度それぞれの方向の予測グリッド分割数。
-    padding_ratio : float
-        観測データの範囲に対して、どれだけ外側までグリッドを広げるか。
-    n_centers_per_side : int
-        RBF基底の中心の目安数(一辺あたり)。実際の中心数は
-        n_centers_per_side ** 2 個をk-meansで配置する。
-    unsupported_distance_factor : float
-        観測点同士の典型的な間隔(標準化空間での距離)の何倍まで離れた
-        グリッド点を「データに支持されている」とみなすか。
-        これより離れた点は外挿の信頼性が低いため結果から除外する。
     extra_columns : tuple of str
         lons/latsに加えて入力に使う列名(例: "age", "floor")。
         欠損値を含む行は学習から除外される。
-    slice_values : dict or None
-        extra_columnsの各列をどの値に固定して緯度経度グリッドを作るか。
-        指定が無い列はその列の中央値を使う。
+    n_centers_per_side : int
+        RBF基底の中心の目安数(一辺あたり)。実際の中心数は
+        n_centers_per_side ** 2 個をk-meansで配置する。
 
     Returns
     -------
-    grid_df : pandas.DataFrame
-        "lons", "lats", "price_mean"(坪単価の推定平均),
-        "price_std"(対数スケールでの予測標準偏差=不確実性)を持つ推定結果。
-        観測点から離れすぎたグリッド点は含まれない。
-    model : sklearn.linear_model.BayesianRidge
-        学習済みモデル。
+    PriceModel
+        学習済みモデルと、predict_price_gridが再利用する付随情報一式。
     """
     feature_columns = SPATIAL_COLUMNS + list(extra_columns)
     df = df.dropna(subset=[*feature_columns, "坪単価"])
@@ -115,6 +111,68 @@ def fit_price_surface(
     model = BayesianRidge()
     model.fit(features, y)
 
+    # 観測点同士の典型的な間隔(標準化した緯度経度だけでの最近傍距離の中央値)を、
+    # predict_price_grid側で「データに支持されない」グリッド点を除外する基準として使う。
+    n_spatial = len(SPATIAL_COLUMNS)
+    X_spatial = X[:, :n_spatial]
+    data_neighbors = NearestNeighbors(n_neighbors=min(2, len(X_spatial))).fit(X_spatial)
+    self_dists, _ = data_neighbors.kneighbors(X_spatial)
+    typical_spacing = np.median(self_dists[:, -1]) if self_dists.shape[1] > 1 else 0.0
+
+    return PriceModel(
+        model=model,
+        centers=centers,
+        length_scale=length_scale,
+        scale=scale,
+        feature_columns=feature_columns,
+        data_neighbors=data_neighbors,
+        typical_spacing=typical_spacing,
+    )
+
+
+def predict_price_grid(
+    df,
+    fitted,
+    grid_size=30,
+    padding_ratio=0.1,
+    unsupported_distance_factor=3.0,
+    extra_columns=(),
+    slice_values=None,
+):
+    """fit_price_modelの学習結果を使い、指定した断面での緯度経度グリッド上の
+    推定値を計算する(軽い処理)。グリッド解像度や断面を変えてもモデルの
+    再学習は発生しない。
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        fit_price_modelに渡したものと同じ観測データ。
+    fitted : PriceModel
+        fit_price_modelの返り値。
+    grid_size : int
+        緯度・経度それぞれの方向の予測グリッド分割数。
+    padding_ratio : float
+        観測データの範囲に対して、どれだけ外側までグリッドを広げるか。
+    unsupported_distance_factor : float
+        観測点同士の典型的な間隔(標準化空間での距離)の何倍まで離れた
+        グリッド点を「データに支持されている」とみなすか。
+        これより離れた点は外挿の信頼性が低いため結果から除外する。
+    extra_columns : tuple of str
+        fit_price_modelに渡したものと同じ列名。
+    slice_values : dict or None
+        extra_columnsの各列をどの値に固定して緯度経度グリッドを作るか。
+        指定が無い列はその列の中央値を使う。
+
+    Returns
+    -------
+    grid_df : pandas.DataFrame
+        "lons", "lats", "price_mean"(坪単価の推定平均),
+        "price_std"(対数スケールでの予測標準偏差=不確実性)を持つ推定結果。
+        観測点から離れすぎたグリッド点は含まれない。
+    """
+    df = df.dropna(subset=[*fitted.feature_columns, "坪単価"])
+    X_raw = df[fitted.feature_columns].to_numpy(dtype=float)
+
     lon_min, lon_max = X_raw[:, 0].min(), X_raw[:, 0].max()
     lat_min, lat_max = X_raw[:, 1].min(), X_raw[:, 1].max()
     lon_pad = (lon_max - lon_min) * padding_ratio
@@ -135,37 +193,66 @@ def fit_price_surface(
         X_grid_raw = np.column_stack([grid_spatial, grid_extra])
     else:
         X_grid_raw = grid_spatial
-    X_grid = X_grid_raw / scale
+    X_grid = X_grid_raw / fitted.scale
 
-    # 観測点同士の典型的な間隔(標準化した緯度経度だけでの最近傍距離の中央値)を基準に、
-    # 空間的に離れすぎたグリッド点(海上・郊外など物件が存在しないエリア)を除外する。
     # 築年数・階数などの断面値がその地点の観測データと異なることは「支持されない」に
-    #含めない(断面によって全グリッド点が消えてしまうため)。そちらの不確実性は
+    # 含めない(断面によって全グリッド点が消えてしまうため)。そちらの不確実性は
     # price_std(予測分散)側に自然に表れる。
     n_spatial = len(SPATIAL_COLUMNS)
-    X_spatial = X[:, :n_spatial]
-    data_neighbors = NearestNeighbors(n_neighbors=min(2, len(X_spatial))).fit(X_spatial)
-    self_dists, _ = data_neighbors.kneighbors(X_spatial)
-    typical_spacing = np.median(self_dists[:, -1]) if self_dists.shape[1] > 1 else 0.0
-    support_threshold = typical_spacing * unsupported_distance_factor
+    support_threshold = fitted.typical_spacing * unsupported_distance_factor
 
-    nearest_obs_dist, _ = data_neighbors.kneighbors(X_grid[:, :n_spatial], n_neighbors=1)
+    nearest_obs_dist, _ = fitted.data_neighbors.kneighbors(X_grid[:, :n_spatial], n_neighbors=1)
     is_supported = nearest_obs_dist[:, 0] <= support_threshold if support_threshold > 0 else np.ones(len(X_grid), dtype=bool)
 
     X_grid_raw = X_grid_raw[is_supported]
     X_grid = X_grid[is_supported]
 
     if len(X_grid) == 0:
-        return pd.DataFrame(columns=["lons", "lats", "price_mean", "price_std"]), model
+        return pd.DataFrame(columns=["lons", "lats", "price_mean", "price_std"])
 
-    grid_features = _rbf_features(X_grid, centers, length_scale)
-    mean_log, std_log = model.predict(grid_features, return_std=True)
+    grid_features = _rbf_features(X_grid, fitted.centers, fitted.length_scale)
+    mean_log, std_log = fitted.model.predict(grid_features, return_std=True)
 
-    grid_df = pd.DataFrame({
+    return pd.DataFrame({
         "lons": X_grid_raw[:, 0],
         "lats": X_grid_raw[:, 1],
         "price_mean": np.exp(mean_log),
         "price_std": std_log,
     })
 
-    return grid_df, model
+
+def fit_price_surface(
+    df,
+    grid_size=30,
+    padding_ratio=0.1,
+    n_centers_per_side=7,
+    unsupported_distance_factor=3.0,
+    extra_columns=(),
+    slice_values=None,
+):
+    """lons/lats(と任意の追加属性)を入力、坪単価を出力としてベイズ線形回帰を学習し、
+    緯度経度グリッド上の推定値を返す。
+
+    fit_price_model + predict_price_gridをまとめて呼ぶ互換用のラッパー。
+    grid_size・slice_valuesを変えるたびに毎回モデルを学習し直したくない
+    呼び出し元(Streamlitページなど)は、fit_price_model/predict_price_gridを
+    個別に呼んで学習結果をキャッシュ・再利用すること。
+
+    Returns
+    -------
+    grid_df : pandas.DataFrame
+        "lons", "lats", "price_mean", "price_std" を持つ推定結果。
+    model : sklearn.linear_model.BayesianRidge
+        学習済みモデル。
+    """
+    fitted = fit_price_model(df, extra_columns=extra_columns, n_centers_per_side=n_centers_per_side)
+    grid_df = predict_price_grid(
+        df,
+        fitted,
+        grid_size=grid_size,
+        padding_ratio=padding_ratio,
+        unsupported_distance_factor=unsupported_distance_factor,
+        extra_columns=extra_columns,
+        slice_values=slice_values,
+    )
+    return grid_df, fitted.model
