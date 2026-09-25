@@ -17,6 +17,21 @@ uv run python load.py suumo
 uv run python load.py mansionreview
 ```
 
+## LLMによる物件名のクレンジング(任意)
+
+SUUMOの物件名は「【リノベ済】〇〇 3階 南向き」のように広告文句が混ざるため、
+`transform/llm_clean.py`でClaudeに建物名だけを抜き出させ、`building_name`カラムに保存します。
+API料金がかかるので、環境変数で明示的に有効化したときだけ動きます(無効時は括弧書きの除去などルールのみ)。
+
+```
+export ANTHROPIC_API_KEY=...
+REALESTATE_LLM_CLEAN=1 uv run python load.py suumo
+```
+
+- 結果は`data/cache/building_name_cache.json`にキャッシュされ、2回目以降は新しい物件名だけAPIを呼びます
+- LLMの出力が元の物件名に含まれない場合(作文した場合)は採用せず、ルールでの結果を使います
+- モデルは`REALESTATE_LLM_MODEL`で変更できます(既定は`claude-opus-5`)
+
 # appの起動
 
 ```

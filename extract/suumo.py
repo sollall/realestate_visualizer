@@ -18,17 +18,24 @@ def extract_name(text):
     return text
 
 def extract_price(text):
-    text = text.strip()
-    match = re.search(r'((\d+)億)?\s*((\d+)万)?', text)
-    if match:
-        oku = int(match.group(2)) * 100000000 if match.group(2) else 0
-        man = int(match.group(4)) * 10000 if match.group(4) else 0
-        return oku + man
-    return None
+    """「1億2000万円」→120000000のように価格テキストを円に変換する
 
-def calculate_age(built_date):
+    「価格未定」など数字を含まないものはNoneを返す。
+    「5000万円～6000万円」のような価格帯は先頭(下限)の値を採用する。
+    """
+    text = text.strip().replace(",", "")
+    match = re.search(r'(\d+)億\s*(?:(\d+)万)?|(\d+)万', text)
+    if not match:
+        return None
+    if match.group(1):
+        oku = int(match.group(1)) * 100000000
+        man = int(match.group(2)) * 10000 if match.group(2) else 0
+        return oku + man
+    return int(match.group(3)) * 10000
+
+def calculate_age(built_date, current_date=None):
     # 現在の年と月を取得
-    current_date = datetime.now()
+    current_date = current_date or datetime.now()
     current_year = current_date.year
     current_month = current_date.month
 
@@ -48,6 +55,10 @@ def calculate_age(built_date):
     if age_months < 0:
         age_years -= 1
         age_months += 12
+
+    # 「2027年3月予定」のような未完成の新築は築年数が負になるため扱わない
+    if age_years < 0:
+        return None,None
 
     return age_years,age_months
 
@@ -103,7 +114,19 @@ def get_estate_data():
                 results_all.extend(result)
                 pbar.update(1)
 
-    return pd.DataFrame(results_all,columns=["name","price","address","area","age","age_months"])
+    data = pd.DataFrame(results_all,columns=["name","price","address","area","age","age_months"])
+    return drop_unparsable(data)
+
+def drop_unparsable(data):
+    """価格未定・未完成の新築など、数値に変換できなかった物件を除く
+
+    全件がパース失敗した場合は空になり、validate_rawでHTML構造の変化として検知される。
+    """
+    parsed = data.dropna(subset=["price", "area", "age"])
+    dropped = len(data) - len(parsed)
+    if dropped:
+        print(f"価格・面積・築年を読み取れなかった{dropped}件を除外しました")
+    return parsed.reset_index(drop=True)
 
 if __name__=="__main__":
     now = datetime.now()
