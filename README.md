@@ -23,7 +23,18 @@ uv run python load.py mansionreview
 uv run streamlit run Home.py
 ```
 
-`Home.py` がメイン画面で、`pages/` 配下の各ページ(analytics, app_estate, plateau, price3d)がサイドバーから選択できます。
+`Home.py` がメイン画面で、`pages/` 配下の各ページ(analytics, app_estate, osm_view, plateau, price3d)がサイドバーから選択できます。
+
+`osm_view`ページでは、売り出し中の物件の位置・階数から周囲を一人称視点で眺められます。
+周辺の建物・道路・鉄道・水域・緑地はOpenStreetMap(Overpass API)からその場で取得し(1日キャッシュ)、
+deck.gl(CDNから読み込み)で描画します。そのため実行環境から`overpass-api.de`と`unpkg.com`に
+アクセスできる必要があります。
+
+- 視点の高さは「階数」から(n-1)×3m+1.5m(目線)で計算します。階数や「向き」の列がある
+  データ(mansionreview)ではそれが初期値になり、無い場合はサイドバーで指定します。
+- OSMの建物は高さ(`height`)や階数(`building:levels`)のタグが無いものが多く、その場合は
+  「詳細設定」で指定した高さ(既定6m)で描画します(灰色の建物が推定値)。
+- 物件の位置を含む建物は、視点が壁の内側に入らないよう非表示にしています。
 
 `plateau`ページはPLATEAUの3D都市モデルデータセットを利用します。サイドバーの「対象の区」で
 東京23区から表示したい区を選べます。選んだ区のデータセットが未インストールの場合は
@@ -51,7 +62,7 @@ uv run pytest
 可視化側は`data/analytics/`配下のCSVというインターフェース越しにのみデータ取得・加工側とつながっており、
 互いの実装の詳細(スクレイピング方法やDataFrameの中間表現など)には依存しません。
 
-- `extract/` … 外部サイト・外部API(ジオコーディング等)へのアクセスのみを担うIF層
+- `extract/` … 外部サイト・外部API(ジオコーディング等)へのアクセスのみを担うIF層。例外として`extract/osm.py`(Overpass API)は`osm_view`ページから物件ごとにその場で呼び出す
 - `transform/` … `extract`が返す生データを分析用データに加工する層(重複除去・ジオコーディング付与など)
 - `pipelines/` … サイトごとに`extract`+`transform`をまとめて実行するオーケストレーション層(`Pipeline`基底クラス)
 - `load.py` … `pipelines`を呼び出すCLIエントリポイント。`data/rawdata/`に生データ、`data/analytics/`に加工済みデータを保存する
