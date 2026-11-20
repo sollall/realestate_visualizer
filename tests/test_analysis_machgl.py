@@ -56,5 +56,7 @@ def test_build_map_html_embeds_datasets_wards_and_escapes_script_tags():
     assert '"initialWard": "渋谷区"' in html
     assert '"渋谷区": {"station": "渋谷駅", "center": [139.7016, 35.658]}' in html
     assert '"buildingOpacity": 0.5' in html
+    # 既定はGPU負荷の高い"high"ではなく、端末に合わせて品質を落とす"auto"
+    assert '"quality": "auto"' in html
     # データ中の</script>で埋め込みスクリプトが途中で閉じないこと
     assert html.count("</script>") == 2

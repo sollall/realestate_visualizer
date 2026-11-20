@@ -98,17 +98,31 @@ def _script_json(value):
     return json.dumps(value, ensure_ascii=False).replace("</", "<\\/")
 
 
+# MachGLの描画品質(setQuality)。既定の"high"は影とアンビエントオクルージョンを
+# 端末の解像度のまま描くためGPU負荷が高い。"auto"はフレーム時間を見て段階的に落とす。
+QUALITY_OPTIONS = {
+    "auto": "自動(推奨)",
+    "high": "高(影あり)",
+    "balanced": "中",
+    "low": "低(軽量)",
+}
+DEFAULT_QUALITY = "auto"
+
+
 def build_map_html(datasets, api_key=DEMO_API_KEY, initial_ward=DEFAULT_WARD,
-                   building_opacity=0.8, zoom=16, pitch=60):
+                   building_opacity=0.8, zoom=16, pitch=45, quality=DEFAULT_QUALITY):
     """PLATEAUの建物(用途で色分け)と物件のマーカーを重ねた単体HTMLを返す。
 
     datasetsは{データ名: to_geojsonの戻り値}。物件のpropertiesには
     "color"([r, g, b, a])と、ポップアップ用の"address"/"坪単価"/"階数"を想定している。
-    データ・区の切り替えと建物の不透明度はページ内のパネルで変更できる。
+    データ・区の切り替え、建物の不透明度、描画品質はページ内のパネルで変更できる。
+    傾き(pitch)を大きくすると遠くの建物まで読み込むため重くなる。
     """
     options = {
         "zoom": zoom,
         "pitch": pitch,
+        "quality": quality,
+        "qualityOptions": QUALITY_OPTIONS,
         "style": PLATEAU_STYLE,
         "buildingLayer": BUILDING_LAYER_ID,
         "buildingColor": usage_color_expression(),
@@ -155,6 +169,9 @@ def build_map_html(datasets, api_key=DEMO_API_KEY, initial_ward=DEFAULT_WARD,
   <select id="ward"></select>
   <label for="opacity">建物の不透明度 <span id="opacity-value"></span></label>
   <input id="opacity" type="range" min="0.1" max="1" step="0.05">
+  <label for="quality">描画品質</label>
+  <select id="quality"></select>
+  <div class="note" id="perf"></div>
   <div class="note">ドラッグで移動、右ドラッグ/Ctrl+ドラッグで傾き・回転。物件のマーカー(坪単価で色分け)をクリックすると詳細が出ます。</div>
   <details open><summary>建物用途の凡例</summary><div id="legend"></div></details>
 </div>
@@ -177,6 +194,8 @@ for (const [name, ward] of Object.entries(options.wards)) {{
   $("ward").append(new Option(`${{name}}(${{ward.station}})`, name));
 }}
 $("ward").value = options.initialWard;
+for (const [value, label] of Object.entries(options.qualityOptions)) $("quality").append(new Option(label, value));
+$("quality").value = options.quality;
 $("opacity").value = options.buildingOpacity;
 $("opacity-value").textContent = options.buildingOpacity;
 
@@ -196,6 +215,11 @@ const map = new geolonia.Map({{
   center: options.wards[options.initialWard].center,
   zoom: options.zoom,
   pitch: options.pitch,
+  quality: options.quality,
+  // 描画が追いつかない端末では、地図を動かしている間だけ建物を隠す
+  buildingsWhileMoving: "auto",
+  // 動かしている間は等倍の解像度で描く(高解像度ディスプレイでの負荷を下げる)
+  movingPixelRatio: 1,
 }});
 
 const setBuildingPaint = (name, value) => {{
@@ -239,6 +263,16 @@ $("opacity").addEventListener("input", (e) => {{
   $("opacity-value").textContent = value;
   setBuildingPaint("bld-opacity", value);
 }});
+$("quality").addEventListener("change", (e) => map.setQuality(e.target.value));
+
+// 端末でどれくらい重いかを確かめられるよう、現在の品質と1フレームの描画時間を表示する
+// (描画時間は「自動」のときだけMachGLが計測する)
+setInterval(() => {{
+  const q = map.getQuality();
+  const parts = [`影: ${{q.shadows ? "あり" : "なし"}}`, `解像度: ${{q.pixelRatio}}x`];
+  if (q.frameMs) parts.push(`描画: ${{q.frameMs.toFixed(1)}}ms/フレーム`);
+  $("perf").textContent = parts.join(" / ");
+}}, 1000);
 showDataset($("dataset").value);
 </script>
 </body></html>
