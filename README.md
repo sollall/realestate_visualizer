@@ -25,6 +25,28 @@ uv run streamlit run Home.py
 
 `Home.py` がメイン画面で、`pages/` 配下の各ページ(analytics, app_estate, plateau, price3d)がサイドバーから選択できます。
 
+# PLATEAU物件マップ(MachGL版・streamlit不要)
+
+Geoloniaの地図描画ライブラリ[MachGL](https://www.geolonia.com/news/2026-11-16-machgl-release/)で、
+PLATEAUの3D建物(建物用途で色分け)と`data/analytics/activelist/`配下の物件を重ねた地図を単体のHTMLに書き出せます。
+データ・区の切り替えや建物の不透明度はページ内のパネルで変更でき、streamlitのように操作のたびに
+地図を読み込み直さないので軽快に動きます。建物データはGeoloniaから全国分が配信されるため、
+`plateaukit install`は不要です(地図はブラウザがGeoloniaから直接読み込みます)。
+
+```
+uv run python scripts/export_plateau_map.py
+```
+
+```
+python -m http.server -d data/maps 8000
+```
+
+ブラウザで http://localhost:8000/plateau_machgl.html を開きます。HTMLファイルを直接開く(`file://`)と
+Geoloniaのデモキーが使えず地図が表示されないため、上のように`localhost`で配信してください。
+GitHub Pagesなどにそのまま置いても表示できます。独自ドメインで公開する場合は[Geolonia](https://app.geolonia.com/)で
+APIキーを発行し、`--api-key`か環境変数`GEOLONIA_API_KEY`で指定してください(月20,000回の地図表示までは
+Freeプランで利用できます)。書き出したHTMLには物件データが含まれるため、`data/maps/`はgitの管理対象外にしています。
+
 `plateau`ページはPLATEAUの3D都市モデルデータセットを利用します。サイドバーの「対象の区」で
 東京23区から表示したい区を選べます。選んだ区のデータセットが未インストールの場合は
 エラーメッセージにインストールコマンドが表示されるので、それに従ってインストールして
