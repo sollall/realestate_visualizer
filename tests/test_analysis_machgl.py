@@ -42,16 +42,19 @@ def test_to_geojson_skips_rows_without_coordinates_and_converts_nan():
     assert json.dumps(geojson)
 
 
-def test_build_map_html_embeds_key_center_and_escapes_script_tags():
+def test_build_map_html_embeds_datasets_wards_and_escapes_script_tags():
     geojson = to_geojson(
         pd.DataFrame({"address": ["</script><b>x"], "lons": [139.79], "lats": [35.70]}),
         ["address"],
     )
 
-    html = build_map_html(geojson, (139.79, 35.70), api_key=DEMO_API_KEY, building_opacity=0.5)
+    html = build_map_html({"suumo.csv": geojson}, api_key=DEMO_API_KEY,
+                          initial_ward="渋谷区", building_opacity=0.5)
 
     assert "geolonia-api-key=YOUR-API-KEY" in html
-    assert '"center": [139.79, 35.7]' in html
+    assert '"suumo.csv"' in html
+    assert '"initialWard": "渋谷区"' in html
+    assert '"渋谷区": {"station": "渋谷駅", "center": [139.7016, 35.658]}' in html
     assert '"buildingOpacity": 0.5' in html
     # データ中の</script>で埋め込みスクリプトが途中で閉じないこと
     assert html.count("</script>") == 2
