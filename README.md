@@ -23,7 +23,18 @@ uv run python load.py mansionreview
 uv run streamlit run Home.py
 ```
 
-`Home.py` がメイン画面で、`pages/` 配下の各ページ(analytics, app_estate, plateau, price3d)がサイドバーから選択できます。
+`Home.py` がメイン画面で、`pages/` 配下の各ページ(analytics, app_estate, plateau, plateau_machgl, price3d)がサイドバーから選択できます。
+
+`plateau_machgl`ページは、Geoloniaの地図描画ライブラリ[MachGL](https://www.geolonia.com/news/2026-11-16-machgl-release/)で
+PLATEAUの3D建物(建物用途で色分け)と物件を表示します。建物データはGeoloniaから全国分が配信されるため、
+`plateaukit install`は不要です。地図はブラウザがGeoloniaのCDN・タイルサーバーから直接読み込みます。
+APIキーは環境変数`GEOLONIA_API_KEY`で指定でき、未指定の場合は`localhost`などでのみ使えるデモキー
+(`YOUR-API-KEY`)を使います。独自ドメインで公開する場合は[Geolonia](https://app.geolonia.com/)で
+APIキーを発行してください(月20,000回の地図表示まではFreeプランで利用できます)。
+
+```
+GEOLONIA_API_KEY=<発行したキー> uv run streamlit run Home.py
+```
 
 `plateau`ページはPLATEAUの3D都市モデルデータセットを利用します。サイドバーの「対象の区」で
 東京23区から表示したい区を選べます。選んだ区のデータセットが未インストールの場合は
